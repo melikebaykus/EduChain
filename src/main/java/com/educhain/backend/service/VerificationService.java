@@ -5,21 +5,36 @@ import org.springframework.stereotype.Service;
 @Service
 public class VerificationService {
 
-    public String verifyHash(String hash) {
+    private final BlockchainService blockchainService;
 
-        // 🔴 ŞİMDİLİK SİMÜLASYON
-        if (hash == null || hash.isEmpty()) {
-            return "INVALID";
+    public VerificationService(BlockchainService blockchainService) {
+        this.blockchainService = blockchainService;
+    }
+
+    // 🔎 HASH DOĞRULAMA (ON-CHAIN)
+    public String verifyHash(String hashHex) {
+
+        if (hashHex == null || hashHex.isBlank()) {
+            return "GEÇERSİZ – hash boş";
         }
 
-        if (hash.equals("123")) {
-            return "VALID";
-        }
+        try {
+            byte[] hash32 = BlockchainService.hexToBytes32(hashHex);
+            boolean isValid = blockchainService.verifyCertificateOnChain(hash32);
 
-        if (hash.equals("456")) {
-            return "REVOKED";
-        }
+            if (isValid) {
+                return "GEÇERLİ";
+            } else {
+                return "GEÇERSİZ / BLOCKCHAIN KAYDI YOK";
+            }
 
-        return "INVALID";
+        } catch (Exception e) {
+            return "HATA – " + e.getMessage();
+        }
+    }
+
+    // 🔗 BLOCKCHAIN BAĞLANTI TESTİ
+    public boolean pingBlockchain() {
+        return blockchainService.pingBlockchain();
     }
 }
