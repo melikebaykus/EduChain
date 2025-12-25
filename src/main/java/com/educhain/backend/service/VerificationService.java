@@ -10,7 +10,7 @@ public class VerificationService {
     public VerificationService(BlockchainService blockchainService) {
         this.blockchainService = blockchainService;
     }
-
+//ass
     // 🔎 HASH DOĞRULAMA (ON-CHAIN)
     public String verifyHash(String hashHex) {
 
