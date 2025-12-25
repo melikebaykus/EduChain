@@ -1,99 +1,118 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { UserRole } from '../../types/role';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   standalone: true,
   selector: 'app-login',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
-    <div
-      style="
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background: #f7f9fc;
-      "
-    >
-      <div
-        style="
-          width: 380px;
-          background: white;
-          padding: 32px;
-          border-radius: 16px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-          text-align: center;
-        "
-      >
-        <h2 style="margin-bottom: 6px;">EduChain</h2>
-        <p style="margin-bottom: 24px; color: #666; font-size: 14px;">
-          Güvenli Diploma Doğrulama Platformu
-        </p>
+    <div class="page">
+      <div class="card">
 
-        <p style="font-weight: 600; margin-bottom: 12px;">
-          Giriş Türü
-        </p>
+        <h1>EduChain</h1>
+        <p class="subtitle">Güvenli Diploma Doğrulama Platformu</p>
 
-        <button
-          *ngFor="let role of roles"
-          (click)="login(role)"
-          style="
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            border: none;
-            background: #5b5be0;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          {{
-            role === 'ADMIN' ? 'Yönetici' :
-            role === 'UNIVERSITY' ? 'Üniversite' :
-            role === 'GRADUATE' ? 'Mezun' :
-            role === 'EMPLOYER' ? 'İşveren' :
-            role
-          }}
-        </button>
+        <!-- 🔹 1. ADIM: SEÇİM -->
+        <ng-container *ngIf="mode === 'choice'">
+          <button class="primary" (click)="mode = 'login'">Giriş Yap</button>
+          <button class="secondary" (click)="mode = 'register'">Kayıt Ol</button>
+        </ng-container>
+
+        <!-- 🔹 2. ADIM: GİRİŞ -->
+        <ng-container *ngIf="mode === 'login'">
+          <input [(ngModel)]="email" placeholder="E-posta" />
+          <input [(ngModel)]="password" type="password" placeholder="Şifre" />
+
+          <button class="primary" (click)="login()">Giriş Yap</button>
+
+          <a (click)="mode = 'choice'">← Geri</a>
+        </ng-container>
+
+        <!-- 🔹 3. ADIM: KAYIT (ŞİMDİLİK DEMO) -->
+        <ng-container *ngIf="mode === 'register'">
+          <p>🚧 Kayıt ekranı yakında</p>
+          <a (click)="mode = 'choice'">← Geri</a>
+        </ng-container>
+
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .page {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f6f7fb;
+    }
+
+    .card {
+      width: 360px;
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .primary {
+      background: #5b5be0;
+      color: white;
+    }
+
+    .secondary {
+      background: #e0e0ff;
+      color: #333;
+    }
+
+    a {
+      font-size: 13px;
+      color: #5b5be0;
+      cursor: pointer;
+    }
+  `]
 })
 export class LoginPage {
+  mode: 'choice' | 'login' | 'register' = 'choice';
 
-  roles: UserRole[] = [
-    'ADMIN',
-    'UNIVERSITY',
-    'GRADUATE',
-    'EMPLOYER'
-  ];
+  email = '';
+  password = '';
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private router: Router) {}
 
-  login(role: UserRole) {
-    this.authService.loginAs(role);
-
-    switch (role) {
-      case 'ADMIN':
-        this.router.navigate(['/admin']);
-        break;
-      case 'UNIVERSITY':
-        this.router.navigate(['/university']);
-        break;
-      case 'GRADUATE':
-        this.router.navigate(['/graduate']);
-        break;
-      case 'EMPLOYER':
-        this.router.navigate(['/employer']);
-        break;
-    }
+  login() {
+    // 🔐 DEMO LOGIN
+    localStorage.setItem('role', 'EMPLOYER');
+    this.router.navigate(['/employer']);
   }
 }
