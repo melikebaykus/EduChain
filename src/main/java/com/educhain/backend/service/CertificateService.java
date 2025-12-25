@@ -5,6 +5,8 @@ import com.educhain.backend.repository.CertificateRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Service
 public class CertificateService {
 
@@ -14,6 +16,12 @@ public class CertificateService {
         this.certificateRepository = certificateRepository;
     }
 
+    // ✅ GET /api/certificates
+    public List<Certificate> getAllCertificates() {
+        return certificateRepository.findAll();
+    }
+
+    // ✅ UPLOAD
     public Certificate uploadAndSave(
             MultipartFile pdf,
             String studentName,
@@ -23,7 +31,6 @@ public class CertificateService {
             String degree
     ) {
 
-        // 🔐 PDF'den HASH ÜRET (config'ten SHA-256 okunuyor)
         String pdfHash = PdfHashUtil.hash(pdf);
 
         Certificate certificate = new Certificate();
@@ -32,8 +39,6 @@ public class CertificateService {
         certificate.setUniversityName(universityName);
         certificate.setDepartment(department);
         certificate.setDegree(degree);
-
-        // ❌ TEMP_HASH YOK → ✅ GERÇEK HASH
         certificate.setDiplomaHash(pdfHash);
 
         return certificateRepository.save(certificate);

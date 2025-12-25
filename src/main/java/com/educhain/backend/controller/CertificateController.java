@@ -7,8 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/certificates")
+@CrossOrigin(origins = "*")
 public class CertificateController {
 
     private final CertificateService certificateService;
@@ -17,6 +20,13 @@ public class CertificateController {
         this.certificateService = certificateService;
     }
 
+    // ✅ TÜM SERTİFİKALARI GETİR
+    @GetMapping
+    public List<Certificate> getAllCertificates() {
+        return certificateService.getAllCertificates();
+    }
+
+    // ✅ PDF UPLOAD
     @PostMapping("/upload")
     public ResponseEntity<UploadCertificateResponse> upload(
             @RequestParam("pdf") MultipartFile pdf,
@@ -31,6 +41,8 @@ public class CertificateController {
                 pdf, studentName, studentNumber, universityName, department, degree
         );
 
-        return ResponseEntity.ok(new UploadCertificateResponse(saved.getId(), saved.getDiplomaHash()));
+        return ResponseEntity.ok(
+                new UploadCertificateResponse(saved.getId(), saved.getDiplomaHash())
+        );
     }
 }
