@@ -15,7 +15,7 @@ public class PdfHashUtil {
     public void setHashAlgorithm(String algorithm) {
         hashAlgorithm = algorithm;
     }
-
+//asss
     public static String hash(MultipartFile file) {
         try {
             MessageDigest digest = MessageDigest.getInstance(hashAlgorithm);
