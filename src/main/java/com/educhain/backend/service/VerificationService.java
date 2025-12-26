@@ -10,7 +10,7 @@ public class VerificationService {
     public VerificationService(BlockchainService blockchainService) {
         this.blockchainService = blockchainService;
     }
-//ass
+
     // 🔎 HASH DOĞRULAMA (ON-CHAIN)
     public String verifyHash(String hashHex) {
 
@@ -20,13 +20,10 @@ public class VerificationService {
 
         try {
             byte[] hash32 = BlockchainService.hexToBytes32(hashHex);
+
             boolean isValid = blockchainService.verifyCertificateOnChain(hash32);
 
-            if (isValid) {
-                return "GEÇERLİ";
-            } else {
-                return "GEÇERSİZ / BLOCKCHAIN KAYDI YOK";
-            }
+            return isValid ? "GEÇERLİ" : "GEÇERSİZ / BLOCKCHAIN KAYDI YOK";
 
         } catch (Exception e) {
             return "HATA – " + e.getMessage();

@@ -1,46 +1,32 @@
 package com.educhain.backend.service;
 
-import com.educhain.backend.model.Certificate;
-import com.educhain.backend.repository.CertificateRepository;
+import com.educhain.backend.util.PdfHashUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Service
 public class CertificateService {
 
-    private final CertificateRepository certificateRepository;
+    private final BlockchainService blockchainService;
 
-    public CertificateService(CertificateRepository certificateRepository) {
-        this.certificateRepository = certificateRepository;
+    public CertificateService(BlockchainService blockchainService) {
+        this.blockchainService = blockchainService;
     }
 
-    // ✅ GET /api/certificates
-    public List<Certificate> getAllCertificates() {
-        return certificateRepository.findAll();
-    }
-
-    // ✅ UPLOAD
-    public Certificate uploadAndSave(
+    public String uploadAndWriteToBlockchain(
             MultipartFile pdf,
-            String studentName,
-            String studentNumber,
-            String universityName,
-            String department,
-            String degree
-    ) {
+            String studentWallet
+    ) throws Exception {
 
-        String pdfHash = PdfHashUtil.hash(pdf);
+        String pdfHashHex = PdfHashUtil.hash(pdf);
+        System.out.println("PDF HASH = " + pdfHashHex);
+        System.out.println("PDF_HASH=" + pdfHashHex);
 
-        Certificate certificate = new Certificate();
-        certificate.setStudentName(studentName);
-        certificate.setStudentNumber(studentNumber);
-        certificate.setUniversityName(universityName);
-        certificate.setDepartment(department);
-        certificate.setDegree(degree);
-        certificate.setDiplomaHash(pdfHash);
 
-        return certificateRepository.save(certificate);
+
+        return blockchainService.issueCertificateOnChain(
+                pdfHashHex,
+                studentWallet
+        );
     }
 }
