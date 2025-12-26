@@ -2,7 +2,9 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { ApiService, VerifyStatus } from '../../services/api.service';
+import { ApiService } from '../../services/api.service';
+
+type VerifyStatus = 'VALID' | 'INVALID' | 'REVOKED';
 
 @Component({
   standalone: true,
@@ -30,27 +32,26 @@ import { ApiService, VerifyStatus } from '../../services/api.service';
           margin-left: 120px;
         "
       >
-        <h2 style="margin: 0 0 6px 0;">İşveren Paneli</h2>
-        <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
+        <h2>İşveren Paneli</h2>
+        <p style="color:#666;font-size:14px;">
           Sertifika hash değeri ile diploma doğruluğunu doğrulayın
         </p>
 
-        <label style="font-weight: 600; font-size: 14px;">
+        <label style="font-weight:600;font-size:14px;">
           Sertifika Hash
         </label>
 
         <input
           type="text"
           [(ngModel)]="hash"
-          placeholder="örn. 0xA1B2C3..."
+          placeholder="örn. bd455e2ca1c..."
           style="
-            width: 100%;
-            padding: 10px;
-            margin-top: 6px;
-            margin-bottom: 14px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            outline-color: #5b5be0;
+            width:100%;
+            padding:10px;
+            margin-top:6px;
+            margin-bottom:14px;
+            border-radius:8px;
+            border:1px solid #ccc;
           "
         />
 
@@ -58,53 +59,31 @@ import { ApiService, VerifyStatus } from '../../services/api.service';
           (click)="verify()"
           [disabled]="loading"
           style="
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: none;
-            background: #5b5be0;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
+            width:100%;
+            padding:12px;
+            border-radius:10px;
+            border:none;
+            background:#5b5be0;
+            color:white;
+            font-weight:600;
           "
         >
           {{ loading ? 'Doğrulanıyor...' : 'Sertifikayı Doğrula' }}
         </button>
 
-        <div
-          *ngIf="!loading && status"
-          style="
-            margin-top: 18px;
-            display: flex;
-            justify-content: center;
-          "
-        >
-          <div
-            [ngStyle]="{
-              'background':
-                status === 'VALID'
-                  ? '#e7f7ee'
-                  : status === 'REVOKED'
-                  ? '#fff4e5'
-                  : '#fdecea',
-              'color':
-                status === 'VALID'
-                  ? '#1e8e3e'
-                  : status === 'REVOKED'
-                  ? '#b26a00'
-                  : '#c5221f'
-            }"
-            style="
-              padding: 8px 16px;
-              border-radius: 999px;
-              font-weight: 600;
-              font-size: 14px;
-            "
-          >
-            <span *ngIf="status === 'VALID'">✅ Sertifika GEÇERLİ</span>
-            <span *ngIf="status === 'INVALID'">❌ Sertifika GEÇERSİZ</span>
-            <span *ngIf="status === 'REVOKED'">⚠️ Sertifika İPTAL EDİLMİŞ</span>
-          </div>
+        <!-- ✅ SONUÇ -->
+        <div *ngIf="status" style="margin-top:18px; text-align:center;">
+          <span *ngIf="status === 'VALID'" style="color:#1e8e3e;font-weight:600;">
+            ✅ Sertifika GEÇERLİ
+          </span>
+
+          <span *ngIf="status === 'INVALID'" style="color:#c5221f;font-weight:600;">
+            ❌ Sertifika GEÇERSİZ
+          </span>
+
+          <span *ngIf="status === 'REVOKED'" style="color:#b26a00;font-weight:600;">
+            ⚠️ Sertifika İPTAL EDİLMİŞ
+          </span>
         </div>
       </div>
     </div>
@@ -128,12 +107,28 @@ export class EmployerDashboardPage {
     this.status = null;
 
     this.api.verifyCertificate(this.hash).subscribe({
-      next: (res) => {
-        this.status = res.status;
+      next: (res: any) => {
+        console.log('VERIFY RESPONSE:', res);
+
+        const backendStatus =
+          (res?.status ?? '')
+            .toString()
+            .toUpperCase()
+            .trim();
+
+        if (backendStatus.includes('GEÇER')) {
+          this.status = 'VALID';
+        } else if (backendStatus.includes('İPTAL')) {
+          this.status = 'REVOKED';
+        } else {
+          this.status = 'INVALID';
+        }
+
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('VERIFY ERROR:', err);
         this.status = 'INVALID';
         this.loading = false;
         this.cdr.detectChanges();

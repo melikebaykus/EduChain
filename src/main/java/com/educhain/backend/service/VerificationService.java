@@ -11,7 +11,7 @@ public class VerificationService {
         this.blockchainService = blockchainService;
     }
 
-    // 🔎 HASH DOĞRULAMA (ON-CHAIN)
+    // 🔎 GERÇEK BLOCKCHAIN VERIFY
     public String verifyHash(String hashHex) {
 
         if (hashHex == null || hashHex.isBlank()) {
@@ -19,18 +19,22 @@ public class VerificationService {
         }
 
         try {
+            // 🔥 EĞER 0x YOKSA EKLE
+            if (!hashHex.startsWith("0x")) {
+                hashHex = "0x" + hashHex;
+            }
+
             byte[] hash32 = BlockchainService.hexToBytes32(hashHex);
+            boolean exists = blockchainService.verifyCertificateOnChain(hash32);
 
-            boolean isValid = blockchainService.verifyCertificateOnChain(hash32);
-
-            return isValid ? "GEÇERLİ" : "GEÇERSİZ / BLOCKCHAIN KAYDI YOK";
+            return exists ? "GEÇERLİ" : "GEÇERSİZ";
 
         } catch (Exception e) {
-            return "HATA – " + e.getMessage();
+            e.printStackTrace();
+            return "HATA";
         }
     }
 
-    // 🔗 BLOCKCHAIN BAĞLANTI TESTİ
     public boolean pingBlockchain() {
         return blockchainService.pingBlockchain();
     }
