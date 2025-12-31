@@ -100,8 +100,13 @@ import { AuthService } from '../../services/auth.service';
   `,
   styles: [`
     *{
-      box-sizing:border-box;
-      font-family:'Outfit','Inter',system-ui,sans-serif;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    h1, h2 {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 0.4px;
     }
 
     /* PAGE */
@@ -174,7 +179,6 @@ import { AuthService } from '../../services/auth.service';
     .top-title h1{
       font-size:42px;
       font-weight:700;
-      letter-spacing:.3px;
     }
 
     /* CARD */
