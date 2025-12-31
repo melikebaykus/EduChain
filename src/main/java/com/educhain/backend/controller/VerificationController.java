@@ -21,21 +21,15 @@ public class VerificationController {
         this.verificationService = verificationService;
     }
 
-    // 🔎 FRONTEND → HASH DOĞRULAMA
+    // ✅ FRONTEND → VERIFY
     @PostMapping("/verify")
     public ResponseEntity<VerifyResponse> verify(@RequestBody VerifyRequest request) {
 
         String result = verificationService.verifyHash(request.getHash());
 
-        return ResponseEntity.ok(
-                new VerifyResponse(result)
-        );
-    }
+        // 🔥 BURASI KRİTİK: String → VerifyResponse
+        VerifyResponse response = new VerifyResponse(result);
 
-    // 🔗 BLOCKCHAIN PING (TEST)
-    @GetMapping("/blockchain/ping")
-    public ResponseEntity<String> pingBlockchain() {
-        boolean ok = verificationService.pingBlockchain();
-        return ResponseEntity.ok(ok ? "BLOCKCHAIN_OK" : "BLOCKCHAIN_FAIL");
+        return ResponseEntity.ok(response);
     }
 }
