@@ -48,7 +48,6 @@ import { AuthService } from '../../services/auth.service';
         <label>Sertifika Hash</label>
 
         <div class="input-wrap">
-          <span class="prefix">0x</span>
 
           <input
             type="text"
@@ -66,7 +65,7 @@ import { AuthService } from '../../services/auth.service';
         </div>
 
         <div class="hint">
-          İpucu: Hash genelde <b>0x</b> ile başlar.
+          İpucu: Hash size verilen değerdir, aynen giriniz.
         </div>
 
         <!-- BUTTON -->
@@ -109,7 +108,6 @@ import { AuthService } from '../../services/auth.service';
       letter-spacing: 0.4px;
     }
 
-    /* PAGE */
     .page{
       min-height:100vh;
       background: radial-gradient(
@@ -126,7 +124,6 @@ import { AuthService } from '../../services/auth.service';
       overflow:hidden;
     }
 
-    /* BACKGROUND AMBIENT */
     .ambient{
       position:absolute;
       inset:-30%;
@@ -152,7 +149,6 @@ import { AuthService } from '../../services/auth.service';
       );
     }
 
-    /* LOGOUT */
     .logout-btn{
       position:absolute;
       top:24px;
@@ -167,7 +163,6 @@ import { AuthService } from '../../services/auth.service';
       z-index:2;
     }
 
-    /* TITLE */
     .top-title{
       position:absolute;
       top:48px;
@@ -181,7 +176,6 @@ import { AuthService } from '../../services/auth.service';
       font-weight:700;
     }
 
-    /* CARD */
     .glass-card{
       width:520px;
       padding:38px;
@@ -232,13 +226,6 @@ import { AuthService } from '../../services/auth.service';
       border-radius:18px;
       background:rgba(255,255,255,.30);
       border:1px solid rgba(255,255,255,.22);
-    }
-
-    .prefix{
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.18);
-      font-size:13px;
     }
 
     input{
@@ -327,11 +314,7 @@ export class EmployerDashboardPage {
     this.loading = true;
     this.status = null;
 
-    const finalHash = this.hash.startsWith('0x')
-      ? this.hash
-      : `0x${this.hash}`;
-
-    this.api.verifyCertificate(finalHash).subscribe({
+    this.api.verifyCertificate(this.hash).subscribe({
       next: (res) => {
         this.status = res.status;
         this.loading = false;
