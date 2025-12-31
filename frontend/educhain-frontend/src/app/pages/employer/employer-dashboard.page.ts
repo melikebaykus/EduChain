@@ -15,13 +15,18 @@ type VerifyStatus = 'VALID' | 'INVALID';
   template: `
     <div class="page">
 
+      <!-- BACKGROUND -->
+      <div class="bg">
+        <span class="ambient"></span>
+        <span class="vignette"></span>
+      </div>
+
       <!-- LOGOUT -->
       <button class="logout-btn" (click)="logout()">Çıkış Yap</button>
 
       <!-- TITLE -->
       <div class="top-title">
         <h1>Diploma ve Sertifika Doğrulama İşlemi</h1>
-
       </div>
 
       <!-- CARD -->
@@ -50,7 +55,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
         </div>
 
         <div class="hint">
-          İpucu: Akıllı cüzdanınızda yer alan .
+          İpucu: Akıllı cüzdanınızda yer alan hash değerini giriniz.
         </div>
 
         <button
@@ -61,9 +66,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
           {{ loading ? 'Sorgulanıyor...' : 'Hash Doğrula' }}
         </button>
 
-        <!-- RESULT -->
         <div *ngIf="status && !loading" class="result">
-
           <div class="badge valid" *ngIf="status === 'VALID'">
             ✅ Sertifika GEÇERLİ
           </div>
@@ -72,7 +75,6 @@ type VerifyStatus = 'VALID' | 'INVALID';
             ❌ Sertifika GEÇERSİZ
             <small>Kayıt bulunamadı veya hatalı hash.</small>
           </div>
-
         </div>
       </div>
     </div>
@@ -87,18 +89,52 @@ type VerifyStatus = 'VALID' | 'INVALID';
       font-family:'Playfair Display','Outfit',serif;
     }
 
-    /* PAGE */
     .page{
       min-height:100vh;
-      background:#05070c;
+      background: radial-gradient(
+        circle at 50% 25%,
+        #0c1426 0%,
+        #070b14 45%,
+        #05070c 100%
+      );
       display:flex;
       align-items:center;
       justify-content:center;
       color:white;
       position:relative;
+      overflow:hidden;
     }
 
-    /* LOGOUT */
+    .bg{
+      position:absolute;
+      inset:0;
+      z-index:0;
+    }
+
+    .ambient{
+      position:absolute;
+      inset:-30%;
+      background: radial-gradient(
+        circle,
+        rgba(255,255,255,0.18),
+        rgba(255,255,255,0.04),
+        transparent 60%
+      );
+      filter: blur(140px);
+      opacity:0.35;
+    }
+
+    .vignette{
+      position:absolute;
+      inset:0;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(0,0,0,0) 35%,
+        rgba(0,0,0,0.6) 75%,
+        rgba(0,0,0,0.85) 100%
+      );
+    }
+
     .logout-btn{
       position:absolute;
       top:24px;
@@ -110,14 +146,15 @@ type VerifyStatus = 'VALID' | 'INVALID';
       color:white;
       cursor:pointer;
       backdrop-filter:blur(10px);
+      z-index:2;
     }
 
-    /* TITLE */
     .top-title{
       position:absolute;
-      top:96px;              /* ⬇️ aşağı alındı */
+      top:96px;
       width:100%;
       text-align:center;
+      z-index:2;
     }
 
     .top-title h1{
@@ -129,14 +166,6 @@ type VerifyStatus = 'VALID' | 'INVALID';
         0 2px 6px rgba(0,0,0,0.4);
     }
 
-    .top-title p{
-      margin-top:10px;
-      font-size:14px;
-      color:#cbd5f5;
-      letter-spacing:0.3px;
-    }
-
-    /* CARD */
     .glass-card{
       width:520px;
       padding:38px;
@@ -144,17 +173,20 @@ type VerifyStatus = 'VALID' | 'INVALID';
       background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.15);
       margin-top:60px;
+      z-index:2;
     }
 
+    /* 🔧 BURASI ÖNEMLİ */
     .card-head{
       display:flex;
       align-items:center;
-      gap:14px;
+      gap:6px;        /* ⬅️ boşluk küçültüldü */
       margin-bottom:26px;
     }
 
     .icon{
-      font-size:26px;
+      font-size:22px;  /* ⬅️ ikon biraz küçültüldü */
+      line-height:1;
     }
 
     label{
