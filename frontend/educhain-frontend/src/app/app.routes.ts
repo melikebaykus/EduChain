@@ -8,43 +8,32 @@ import { roleGuard } from './guards/role.guard';
 import { MainLayoutComponent } from './layouts/main-layout.component';
 
 export const routes: Routes = [
-  // 🔹 İlk açılış login
+
+  // 🔹 İlk açılış
   { path: '', pathMatch: 'full', redirectTo: 'login' },
 
-  // 🔹 Login her zaman açık
+  // 🔹 Login
   { path: 'login', component: LoginPage },
 
-  // 🔹 Ana layout
+  // ✅ EMPLOYER → LAYOUT YOK (sidebar YOK)
+  {
+    path: 'employer',
+    component: EmployerDashboardPage,
+    canActivate: [roleGuard(['EMPLOYER'])]
+  },
+
+  // 🔹 Diğer roller için layout (şimdilik kapalı)
   {
     path: '',
     component: MainLayoutComponent,
     children: [
-      // ✅ SADECE EMPLOYER AKTİF
-      {
-        path: 'employer',
-        component: EmployerDashboardPage,
-        canActivate: [roleGuard(['EMPLOYER'])]
-      }
-
-      // ⛔ ŞİMDİLİK KAPALI (SİLME YOK)
-      // {
-      //   path: 'admin',
-      //   component: AdminDashboardPage,
-      //   canActivate: [roleGuard(['ADMIN'])]
-      // },
-      // {
-      //   path: 'university',
-      //   component: UniversityDashboardPage,
-      //   canActivate: [roleGuard(['UNIVERSITY'])]
-      // },
-      // {
-      //   path: 'graduate',
-      //   component: GraduateDashboardPage,
-      //   canActivate: [roleGuard(['GRADUATE'])]
-      // }
+      // ileride açılacak
+      // { path: 'admin', component: AdminDashboardPage },
+      // { path: 'university', component: UniversityDashboardPage },
+      // { path: 'graduate', component: GraduateDashboardPage },
     ]
   },
 
-  // 🔹 Hatalı URL
+  // 🔹 404
   { path: '**', component: NotFoundPage }
 ];
