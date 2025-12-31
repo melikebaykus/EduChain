@@ -28,7 +28,11 @@ import { AuthService } from '../../services/auth.service';
       </div>
 
       <!-- CARD -->
-      <div class="glass-card">
+      <div
+        class="glass-card"
+        [class.valid-glow]="status === 'VALID'"
+        [class.invalid-glow]="status === 'INVALID'"
+      >
 
         <!-- HEADER -->
         <div class="card-head">
@@ -48,7 +52,6 @@ import { AuthService } from '../../services/auth.service';
         <label>Sertifika Hash</label>
 
         <div class="input-wrap">
-
           <input
             type="text"
             [(ngModel)]="hash"
@@ -84,10 +87,6 @@ import { AuthService } from '../../services/auth.service';
             ✅ Sertifika GEÇERLİ
           </div>
 
-          <div class="badge revoked" *ngIf="status === 'REVOKED'">
-            ⚠️ Sertifika İPTAL EDİLMİŞ
-          </div>
-
           <div class="badge invalid" *ngIf="status === 'INVALID'">
             ❌ Sertifika GEÇERSİZ
             <small>Kayıt bulunamadı veya hatalı hash.</small>
@@ -99,13 +98,12 @@ import { AuthService } from '../../services/auth.service';
   `,
   styles: [`
     *{
-      box-sizing: border-box;
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      box-sizing:border-box;
+      font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
     }
 
-    h1, h2 {
-      font-family: 'Playfair Display', serif;
-      letter-spacing: 0.4px;
+    h1,h2{
+      font-family:'Playfair Display','Outfit',serif;
     }
 
     .page{
@@ -135,7 +133,6 @@ import { AuthService } from '../../services/auth.service';
       );
       filter: blur(140px);
       opacity:0.35;
-      pointer-events:none;
     }
 
     .vignette{
@@ -192,6 +189,23 @@ import { AuthService } from '../../services/auth.service';
         0 40px 100px rgba(0,0,0,.65);
       margin-top:40px;
       z-index:2;
+      transition: all .4s ease;
+    }
+
+    /* ✅ GEÇERLİ → YEŞİL */
+    .glass-card.valid-glow{
+      border-color: rgba(34,197,94,.7);
+      box-shadow:
+        0 0 40px rgba(34,197,94,.45),
+        0 0 90px rgba(34,197,94,.35);
+    }
+
+    /* ❌ GEÇERSİZ → KIRMIZI */
+    .glass-card.invalid-glow{
+      border-color: rgba(239,68,68,.7);
+      box-shadow:
+        0 0 40px rgba(239,68,68,.45),
+        0 0 90px rgba(239,68,68,.35);
     }
 
     .card-head{
@@ -284,11 +298,6 @@ import { AuthService } from '../../services/auth.service';
       color:#22c55e;
     }
 
-    .badge.revoked{
-      background:rgba(234,179,8,.15);
-      color:#eab308;
-    }
-
     .badge.invalid{
       background:rgba(239,68,68,.15);
       color:#ef4444;
@@ -308,34 +317,26 @@ export class EmployerDashboardPage {
     private authService: AuthService
   ) {}
 
- verify(): void {
-   if (!this.hash) return;
+  verify(): void {
+    if (!this.hash) return;
 
-   this.loading = true;
-   this.status = null;
+    this.loading = true;
+    this.status = null;
 
-   this.api.verifyCertificate(this.hash).subscribe({
-     next: (res) => {
-       const backendStatus = res.status as string;
-
-       if (backendStatus === 'GEÇERLİ') {
-         this.status = 'VALID';
-       } else {
-         this.status = 'INVALID';
-       }
-
-       this.loading = false;
-       this.cdr.detectChanges();
-     },
-     error: () => {
-       this.status = 'INVALID';
-       this.loading = false;
-       this.cdr.detectChanges();
-     }
-   });
- }
-
-
+    this.api.verifyCertificate(this.hash).subscribe({
+      next: (res) => {
+        const backendStatus = res.status as string;
+        this.status = backendStatus === 'GEÇERLİ' ? 'VALID' : 'INVALID';
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.status = 'INVALID';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   async pasteFromClipboard(): Promise<void> {
     try {
