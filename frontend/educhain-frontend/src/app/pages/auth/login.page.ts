@@ -74,7 +74,7 @@ import { AuthService } from '../../services/auth.service';
     }
 
     .top-title h1 {
-      font-size: 44px;
+      font-size: 56px; /* 🔥 SADECE BURASI BÜYÜTÜLDÜ */
       font-weight: 600;
       letter-spacing: -1px;
       color: #ffffff;
@@ -90,13 +90,10 @@ import { AuthService } from '../../services/auth.service';
       z-index: 2;
     }
 
-    /* ================= ORBLAR (3 ADET - KÜÇÜK) ================= */
     .orb {
       position: absolute;
       border-radius: 50%;
       z-index: 1;
-
-      /* Daha solid, mat görünüm */
       background: radial-gradient(
         circle at 35% 35%,
         rgba(100, 110, 125, 0.9) 0%,
@@ -104,43 +101,18 @@ import { AuthService } from '../../services/auth.service';
         rgba(45, 52, 60, 0.9) 65%,
         rgba(30, 35, 42, 0.95) 100%
       );
-
       opacity: 0.95;
       filter: blur(0px);
-
-      /* Daha belirgin gölge */
       box-shadow:
         inset -15px -15px 40px rgba(0, 0, 0, 0.5),
         inset 15px 15px 40px rgba(120, 130, 145, 0.15),
         0 25px 60px rgba(0, 0, 0, 0.8);
     }
 
-    /* SOL ÜST */
-    .orb-top-left {
-      width: 200px;
-      height: 200px;
-      top: 80px;
-      left: -60px;
-    }
+    .orb-top-left { width:200px;height:200px;top:80px;left:-60px; }
+    .orb-top-right { width:240px;height:240px;top:20px;right:-80px; }
+    .orb-bottom-center { width:180px;height:180px;bottom:-40px;left:50%;transform:translateX(-50%); }
 
-    /* SAĞ ÜST */
-    .orb-top-right {
-      width: 240px;
-      height: 240px;
-      top: 20px;
-      right: -80px;
-    }
-
-    /* ALT ORTA */
-    .orb-bottom-center {
-      width: 180px;
-      height: 180px;
-      bottom: -40px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    /* ================= EYES ================= */
     .eyes {
       position: absolute;
       top: -16px;
@@ -156,126 +128,66 @@ import { AuthService } from '../../services/auth.service';
       z-index: 4;
     }
 
-    .eye {
-      width: 16px;
-      height: 16px;
-      background: #f8fafc;
-      border-radius: 50%;
-      position: relative;
-    }
+    .eye { width:16px;height:16px;background:#f8fafc;border-radius:50%;position:relative; }
+    .eye::after { content:'';width:6px;height:6px;background:#020617;border-radius:50%;position:absolute;top:5px;left:5px; }
 
-    .eye::after {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: #020617;
-      border-radius: 50%;
-      position: absolute;
-      top: 5px;
-      left: 5px;
-    }
+    .eyes.focused .eye { height:6px;border-radius:6px; }
+    .eyes.focused .eye::after { opacity:0; }
 
-    .eyes.focused .eye {
-      height: 6px;
-      border-radius: 6px;
-    }
-
-    .eyes.focused .eye::after {
-      opacity: 0;
-    }
-
-    /* ================= GLASS CARD ================= */
     .card {
       width: 460px;
       padding: 46px 42px;
       border-radius: 36px;
-
       background: linear-gradient(
         145deg,
         rgba(255,255,255,0.18),
         rgba(255,255,255,0.06)
       );
-
       backdrop-filter: blur(26px);
       border: 1px solid rgba(255,255,255,0.22);
-
       box-shadow:
         inset 0 1px 1px rgba(255,255,255,0.3),
         0 40px 90px rgba(0,0,0,0.75);
-
       text-align: center;
       z-index: 2;
       position: relative;
     }
 
-    h2 {
-      margin: 0 0 24px 0;
-      font-size: 28px;
-      font-weight: 700;
-    }
+    h2 { margin:0 0 24px;font-size:28px;font-weight:700; }
 
-    label {
-      display: block;
-      text-align: left;
-      font-size: 13px;
-      color: #cbd5f5;
-      margin-top: 14px;
-      margin-bottom: 6px;
-    }
+    label { display:block;text-align:left;font-size:13px;color:#cbd5f5;margin-top:14px;margin-bottom:6px; }
 
     input {
-      width: 100%;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: none;
-      background: rgba(255,255,255,0.25);
-      color: white;
-      font-size: 14px;
+      width:100%;
+      padding:14px 16px;
+      border-radius:16px;
+      border:none;
+      background:rgba(255,255,255,0.25);
+      color:white;
+      font-size:14px;
     }
 
-    input::placeholder {
-      color: rgba(255,255,255,0.5);
-    }
-
-    input:focus {
-      outline: none;
-      background: rgba(255,255,255,0.3);
-    }
+    input:focus { outline:none;background:rgba(255,255,255,0.3); }
 
     button {
-      width: 100%;
-      margin-top: 28px;
-      padding: 16px;
-      border-radius: 18px;
-      border: none;
-      background: rgba(255,255,255,0.28);
-      color: white;
-      font-weight: 600;
-      font-size: 15px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    button:hover {
-      background: rgba(255,255,255,0.35);
-      transform: translateY(-1px);
+      width:100%;
+      margin-top:28px;
+      padding:16px;
+      border-radius:18px;
+      border:none;
+      background:rgba(255,255,255,0.28);
+      color:white;
+      font-weight:600;
+      font-size:15px;
+      cursor:pointer;
     }
 
     .links {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 22px;
-      font-size: 13px;
-      color: #cbd5f5;
-    }
-
-    .links span {
-      cursor: pointer;
-      transition: color 0.2s ease;
-    }
-
-    .links span:hover {
-      color: white;
+      display:flex;
+      justify-content:space-between;
+      margin-top:22px;
+      font-size:13px;
+      color:#cbd5f5;
     }
   `]
 })
@@ -287,14 +199,11 @@ export class LoginPage {
 
   constructor(
     private router: Router,
-    private authService: AuthService  // 👈 AuthService'i ekledik
+    private authService: AuthService
   ) {}
 
   login() {
-    // 👇 ÖNCELİKLE ROLE'Ü SET ET
     this.authService.loginAs('EMPLOYER');
-
-    // 👇 SONRA YÖNLENDİR
     this.router.navigate(['/employer']);
   }
 }

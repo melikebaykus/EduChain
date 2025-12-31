@@ -3,10 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { ApiService, VerifyStatus } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-
-type VerifyStatus = 'VALID' | 'INVALID';
 
 @Component({
   standalone: true,
@@ -32,19 +30,31 @@ type VerifyStatus = 'VALID' | 'INVALID';
       <!-- CARD -->
       <div class="glass-card">
 
+        <!-- HEADER -->
         <div class="card-head">
-          <div class="icon">🔒</div>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
+                stroke="currentColor"
+                stroke-width="1.6"
+              />
+            </svg>
+          </div>
           <h2>Sertifika Doğrulama</h2>
         </div>
 
+        <!-- INPUT -->
         <label>Sertifika Hash</label>
 
         <div class="input-wrap">
+
           <input
             type="text"
             [(ngModel)]="hash"
-            placeholder="Hash giriniz"
+            placeholder="A1B2C3..."
           />
+
           <button
             class="mini-btn"
             (click)="pasteFromClipboard()"
@@ -55,9 +65,10 @@ type VerifyStatus = 'VALID' | 'INVALID';
         </div>
 
         <div class="hint">
-          İpucu: Akıllı cüzdanınızda yer alan hash değerini giriniz.
+          İpucu: Hash size verilen değerdir, aynen giriniz.
         </div>
 
+        <!-- BUTTON -->
         <button
           class="verify-btn"
           (click)="verify()"
@@ -66,27 +77,35 @@ type VerifyStatus = 'VALID' | 'INVALID';
           {{ loading ? 'Sorgulanıyor...' : 'Hash Doğrula' }}
         </button>
 
-        <div *ngIf="status && !loading" class="result">
+        <!-- RESULT -->
+        <div *ngIf="!loading && status" class="result">
+
           <div class="badge valid" *ngIf="status === 'VALID'">
             ✅ Sertifika GEÇERLİ
+          </div>
+
+          <div class="badge revoked" *ngIf="status === 'REVOKED'">
+            ⚠️ Sertifika İPTAL EDİLMİŞ
           </div>
 
           <div class="badge invalid" *ngIf="status === 'INVALID'">
             ❌ Sertifika GEÇERSİZ
             <small>Kayıt bulunamadı veya hatalı hash.</small>
           </div>
+
         </div>
       </div>
     </div>
   `,
   styles: [`
     *{
-      box-sizing:border-box;
-      font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    h1,h2{
-      font-family:'Playfair Display','Outfit',serif;
+    h1, h2 {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 0.4px;
     }
 
     .page{
@@ -105,12 +124,6 @@ type VerifyStatus = 'VALID' | 'INVALID';
       overflow:hidden;
     }
 
-    .bg{
-      position:absolute;
-      inset:0;
-      z-index:0;
-    }
-
     .ambient{
       position:absolute;
       inset:-30%;
@@ -122,6 +135,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
       );
       filter: blur(140px);
       opacity:0.35;
+      pointer-events:none;
     }
 
     .vignette{
@@ -141,8 +155,8 @@ type VerifyStatus = 'VALID' | 'INVALID';
       right:28px;
       padding:8px 16px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,0.25);
-      background:rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,.25);
+      background:rgba(255,255,255,.12);
       color:white;
       cursor:pointer;
       backdrop-filter:blur(10px);
@@ -151,42 +165,50 @@ type VerifyStatus = 'VALID' | 'INVALID';
 
     .top-title{
       position:absolute;
-      top:96px;
+      top:48px;
       width:100%;
       text-align:center;
       z-index:2;
     }
 
     .top-title h1{
-      font-size:40px;
-      font-weight:600;
-      letter-spacing:0.6px;
-      text-shadow:
-        0 0 30px rgba(120,170,255,0.25),
-        0 2px 6px rgba(0,0,0,0.4);
+      font-size:42px;
+      font-weight:700;
     }
 
     .glass-card{
       width:520px;
       padding:38px;
-      border-radius:24px;
-      background:rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.15);
-      margin-top:60px;
+      border-radius:36px;
+      background: linear-gradient(
+        160deg,
+        rgba(255,255,255,0.28),
+        rgba(255,255,255,0.10)
+      );
+      backdrop-filter: blur(36px) saturate(120%);
+      border:1px solid rgba(255,255,255,0.28);
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,.35),
+        0 40px 100px rgba(0,0,0,.65);
+      margin-top:40px;
       z-index:2;
     }
 
-    /* 🔧 BURASI ÖNEMLİ */
     .card-head{
       display:flex;
       align-items:center;
-      gap:6px;        /* ⬅️ boşluk küçültüldü */
+      gap:14px;
       margin-bottom:26px;
     }
 
     .icon{
-      font-size:22px;  /* ⬅️ ikon biraz küçültüldü */
-      line-height:1;
+      width:44px;
+      height:44px;
+      border-radius:16px;
+      background:rgba(255,255,255,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
 
     label{
@@ -198,10 +220,12 @@ type VerifyStatus = 'VALID' | 'INVALID';
 
     .input-wrap{
       display:flex;
+      align-items:center;
       gap:10px;
       padding:12px;
-      border-radius:14px;
-      background:rgba(255,255,255,0.15);
+      border-radius:18px;
+      background:rgba(255,255,255,.30);
+      border:1px solid rgba(255,255,255,.22);
     }
 
     input{
@@ -209,15 +233,16 @@ type VerifyStatus = 'VALID' | 'INVALID';
       border:none;
       background:transparent;
       color:white;
+      font-size:14px;
       outline:none;
     }
 
     .mini-btn{
+      padding:8px 14px;
+      border-radius:14px;
       border:none;
-      background:#444;
+      background:rgba(255,255,255,.25);
       color:white;
-      border-radius:10px;
-      padding:8px 12px;
       cursor:pointer;
     }
 
@@ -230,10 +255,14 @@ type VerifyStatus = 'VALID' | 'INVALID';
     .verify-btn{
       margin-top:20px;
       width:100%;
-      padding:14px;
+      padding:16px;
+      border-radius:18px;
       border:none;
-      border-radius:14px;
-      background:#555;
+      background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.38),
+        rgba(255,255,255,0.22)
+      );
       color:white;
       font-weight:600;
       cursor:pointer;
@@ -246,17 +275,22 @@ type VerifyStatus = 'VALID' | 'INVALID';
 
     .badge{
       padding:14px;
-      border-radius:16px;
+      border-radius:20px;
       font-weight:600;
     }
 
     .badge.valid{
-      background:rgba(34,197,94,0.2);
+      background:rgba(34,197,94,.15);
       color:#22c55e;
     }
 
+    .badge.revoked{
+      background:rgba(234,179,8,.15);
+      color:#eab308;
+    }
+
     .badge.invalid{
-      background:rgba(239,68,68,0.2);
+      background:rgba(239,68,68,.15);
       color:#ef4444;
     }
   `]
@@ -274,25 +308,34 @@ export class EmployerDashboardPage {
     private authService: AuthService
   ) {}
 
-  verify(): void {
-    if (!this.hash) return;
+ verify(): void {
+   if (!this.hash) return;
 
-    this.loading = true;
-    this.status = null;
+   this.loading = true;
+   this.status = null;
 
-    this.api.verifyCertificate(this.hash).subscribe({
-      next: (res) => {
-        this.status = res.status === 'GEÇERLİ' ? 'VALID' : 'INVALID';
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.status = 'INVALID';
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
+   this.api.verifyCertificate(this.hash).subscribe({
+     next: (res) => {
+       const backendStatus = res.status as string;
+
+       if (backendStatus === 'GEÇERLİ') {
+         this.status = 'VALID';
+       } else {
+         this.status = 'INVALID';
+       }
+
+       this.loading = false;
+       this.cdr.detectChanges();
+     },
+     error: () => {
+       this.status = 'INVALID';
+       this.loading = false;
+       this.cdr.detectChanges();
+     }
+   });
+ }
+
+
 
   async pasteFromClipboard(): Promise<void> {
     try {

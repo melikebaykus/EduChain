@@ -2,15 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-/**
- * 🔹 Backend'in GERÇEKTEN döndürdüğü response
- * {
- *   "status": "GEÇERLİ" | "GEÇERSİZ" | "İPTAL"
- * }
- */
-export interface VerifyResponse {
-  status: string;
-}
+export type VerifyStatus = 'VALID' | 'INVALID' | 'REVOKED';
 
 @Injectable({
   providedIn: 'root'
@@ -21,11 +13,8 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * 🔐 Sertifika Hash doğrulama
-   */
-  verifyCertificate(hash: string): Observable<VerifyResponse> {
-    return this.http.post<VerifyResponse>(
+  verifyCertificate(hash: string): Observable<{ status: VerifyStatus }> {
+    return this.http.post<{ status: VerifyStatus }>(
       `${this.BASE_URL}/verify`,
       { hash }
     );
