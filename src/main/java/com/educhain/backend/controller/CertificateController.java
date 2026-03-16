@@ -1,7 +1,9 @@
 package com.educhain.backend.controller;
 
 import com.educhain.backend.dto.UploadCertificateResponse;
+import com.educhain.backend.dto.VerifyCertificateResponse;
 import com.educhain.backend.service.CertificateService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,5 +35,29 @@ public class CertificateController {
         return ResponseEntity.ok(
                 new UploadCertificateResponse(transactionHash)
         );
+    }
+
+    // ✅ PDF → HASH → BLOCKCHAIN KARŞILAŞTIRMA (HASH UI'DA GÖRÜNMEZ)
+    @PostMapping("/verify")
+    public ResponseEntity<VerifyCertificateResponse> verify(
+            @RequestParam("pdf") MultipartFile pdf,
+            @RequestParam("studentWallet") String studentWallet
+    ) throws Exception {
+
+        boolean valid =
+                certificateService.verifyAgainstStudentWallet(
+                        pdf,
+                        studentWallet
+                );
+
+        if (valid) {
+            return ResponseEntity.ok(
+                    new VerifyCertificateResponse(true, "Diploma geçerli")
+            );
+        } else {
+            return ResponseEntity.ok(
+                    new VerifyCertificateResponse(false, "Diploma geçersiz")
+            );
+        }
     }
 }

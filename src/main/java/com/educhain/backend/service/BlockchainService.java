@@ -14,6 +14,7 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.RawTransactionManager;
@@ -40,19 +41,17 @@ public class BlockchainService {
         this.credentials = Credentials.create(privateKey);
     }
 
-    // ✅ RPC bağlantı testi
+    // Blockchain bağlantı testi
     public boolean pingBlockchain() {
         try {
-            web3j.web3ClientVersion().send();
-            return true;
+            return web3j.web3ClientVersion().send().getWeb3ClientVersion() != null;
         } catch (Exception e) {
             return false;
         }
     }
 
-    // 🔥 HASH → BLOCKCHAIN (issueCertificate)
+    // issueCertificate(bytes32 certificateHash, address student)
     public String issueCertificateOnChain(String pdfHashHex, String studentAddress) throws Exception {
-
         byte[] hashBytes32 = hexToBytes32(pdfHashHex);
 
         Function function = new Function(
@@ -79,6 +78,10 @@ public class BlockchainService {
                 BigInteger.ZERO
         );
 
+        if (tx == null) {
+            throw new RuntimeException("Blockchain işlemi gönderilemedi.");
+        }
+
         if (tx.hasError()) {
             throw new RuntimeException("Blockchain TX error: " + tx.getError().getMessage());
         }
@@ -86,57 +89,109 @@ public class BlockchainService {
         return tx.getTransactionHash();
     }
 
-    // ✅ GERÇEK VERIFY: verifyCertificate(bytes32) -> (address,address,uint256,bool)
-    public boolean verifyCertificateOnChain(byte[] certificateHash32) throws Exception {
+    // verifyCertificate(bytes32 certificateHash)
+    // returns (address university, address student, uint256 issuedAt, bool isValid)
+    public VerifyResult verifyCertificateOnChain(String pdfHashHex) throws Exception {
+        byte[] certificateHash32 = hexToBytes32(pdfHashHex);
 
         Function function = new Function(
                 "verifyCertificate",
                 Collections.singletonList(new Bytes32(certificateHash32)),
                 Arrays.asList(
-                        new TypeReference<Address>() {},
-                        new TypeReference<Address>() {},
-                        new TypeReference<Uint256>() {},
-                        new TypeReference<Bool>() {}
+                        new TypeReference<Address>() {},   // university
+                        new TypeReference<Address>() {},   // student
+                        new TypeReference<Uint256>() {},   // issuedAt
+                        new TypeReference<Bool>() {}       // isValid
                 )
         );
 
         String encoded = FunctionEncoder.encode(function);
 
-        Transaction ethCall = Transaction.createEthCallTransaction(
-                null,
+        Transaction ethCallTransaction = Transaction.createEthCallTransaction(
+                credentials.getAddress(),
                 contractAddress,
                 encoded
         );
 
-        String value = web3j.ethCall(ethCall, DefaultBlockParameterName.LATEST)
-                .send()
-                .getValue();
+        EthCall ethCall = web3j.ethCall(ethCallTransaction, DefaultBlockParameterName.LATEST).send();
+
+        if (ethCall == null) {
+            return new VerifyResult(false, null, null, 0L, false);
+        }
+
+        if (ethCall.isReverted()) {
+            return new VerifyResult(false, null, null, 0L, false);
+        }
+
+        String value = ethCall.getValue();
+
+        if (value == null || "0x".equals(value)) {
+            return new VerifyResult(false, null, null, 0L, false);
+        }
 
         List<org.web3j.abi.datatypes.Type> decoded =
                 FunctionReturnDecoder.decode(value, function.getOutputParameters());
 
-        // Eğer contract "Certificate not found" diye revert ederse decode boş gelebilir
-        if (decoded == null || decoded.size() < 4) return false;
+        if (decoded == null || decoded.size() < 4) {
+            return new VerifyResult(false, null, null, 0L, false);
+        }
 
-        Bool isValid = (Bool) decoded.get(3);
-        return Boolean.TRUE.equals(isValid.getValue());
+        String universityAddress = ((Address) decoded.get(0)).getValue();
+        String studentAddress = ((Address) decoded.get(1)).getValue();
+        BigInteger issuedAt = ((Uint256) decoded.get(2)).getValue();
+        Boolean isValid = ((Bool) decoded.get(3)).getValue();
+
+        boolean exists =
+                universityAddress != null &&
+                        !universityAddress.equalsIgnoreCase("0x0000000000000000000000000000000000000000");
+
+        return new VerifyResult(
+                exists,
+                universityAddress,
+                studentAddress,
+                issuedAt != null ? issuedAt.longValue() : 0L,
+                Boolean.TRUE.equals(isValid)
+        );
     }
 
-    // ✅ Hex (64 char) → bytes32
+    public static class VerifyResult {
+        public boolean exists;
+        public String universityAddress;
+        public String studentAddress;
+        public long issuedAt;
+        public boolean isValid;
+
+        public VerifyResult(boolean exists, String universityAddress, String studentAddress, long issuedAt, boolean isValid) {
+            this.exists = exists;
+            this.universityAddress = universityAddress;
+            this.studentAddress = studentAddress;
+            this.issuedAt = issuedAt;
+            this.isValid = isValid;
+        }
+    }
+
     public static byte[] hexToBytes32(String hex) {
-        if (hex == null) throw new IllegalArgumentException("Hash null olamaz");
+        if (hex == null || hex.isBlank()) {
+            throw new IllegalArgumentException("Hash boş olamaz.");
+        }
 
         String clean = hex.trim();
-        if (clean.startsWith("0x") || clean.startsWith("0X")) clean = clean.substring(2);
+        if (clean.startsWith("0x") || clean.startsWith("0X")) {
+            clean = clean.substring(2);
+        }
 
         if (clean.length() != 64) {
-            throw new IllegalArgumentException("Hash 64 hex karakter olmalı (32 byte). Gelen: " + clean.length());
+            throw new IllegalArgumentException("Hash 64 hex karakter olmalı. Gelen uzunluk: " + clean.length());
+        }
+
+        if (!clean.matches("[0-9a-fA-F]{64}")) {
+            throw new IllegalArgumentException("Hash sadece hexadecimal karakter içermeli.");
         }
 
         byte[] out = new byte[32];
         for (int i = 0; i < 32; i++) {
-            int idx = i * 2;
-            out[i] = (byte) Integer.parseInt(clean.substring(idx, idx + 2), 16);
+            int index = i * 2;
+            out[i] = (byte) Integer.parseInt(clean.substring(index, index + 2), 16);
         }
         return out;
     }

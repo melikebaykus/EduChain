@@ -19,4 +19,58 @@ export class ApiService {
       { hash }
     );
   }
+
+  verifyCertificatePdf(
+    file: File,
+    universityName: string,
+    department: string,
+    studentNumber: string
+  ): Observable<{ status: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('universityName', universityName);
+    form.append('department', department);
+    form.append('studentNumber', studentNumber);
+
+    return this.http.post<{ status: string }>(
+      `${this.BASE_URL}/verify-pdf`,
+      form
+    );
+  }
+
+  getUniversities(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.BASE_URL}/students/universities`);
+  }
+
+  getDepartmentsByUniversity(universityName: string): Observable<string[]> {
+    return this.http.get<string[]>(
+      `${this.BASE_URL}/students/departments`,
+      { params: { universityName } }
+    );
+  }
+
+  issueCertificatePdf(file: File, studentNumber: string): Observable<{
+    status: string;
+    studentName: string;
+    studentNumber: string;
+    walletAddress: string;
+    hash: string;
+    transactionHash: string;
+  }> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('studentNumber', studentNumber);
+
+    return this.http.post<{
+      status: string;
+      studentName: string;
+      studentNumber: string;
+      walletAddress: string;
+      hash: string;
+      transactionHash: string;
+    }>(
+      `${this.BASE_URL}/university/issue-pdf`,
+      form
+    );
+  }
 }

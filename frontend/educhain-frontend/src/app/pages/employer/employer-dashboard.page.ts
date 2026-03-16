@@ -1,10 +1,12 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { ApiService, VerifyStatus } from '../../services/api.service';
+import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+
+type VerifyStatus = 'VALID' | 'INVALID';
 
 @Component({
   standalone: true,
@@ -13,85 +15,100 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <div class="page">
 
-      <!-- BACKGROUND -->
       <div class="bg">
         <span class="ambient"></span>
         <span class="vignette"></span>
       </div>
 
-      <!-- LOGOUT -->
       <button class="logout-btn" (click)="logout()">Çıkış Yap</button>
 
-      <!-- TITLE -->
       <div class="top-title">
         <h1>Diploma ve Sertifika Doğrulama İşlemi</h1>
       </div>
 
-      <!-- CARD -->
-      <div
-        class="glass-card"
-        [class.valid-glow]="status === 'VALID'"
-        [class.invalid-glow]="status === 'INVALID'"
-      >
+      <div class="glass-card">
 
-        <!-- HEADER -->
         <div class="card-head">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
-                stroke="currentColor"
-                stroke-width="1.6"
-              />
-            </svg>
-          </div>
+          <div class="icon">🔒</div>
           <h2>Sertifika Doğrulama</h2>
         </div>
 
-        <!-- INPUT -->
-        <label>Sertifika Hash</label>
+        <label>Diploma / Sertifika PDF</label>
+
+        <div class="input-wrap">
+          <input
+            type="file"
+            accept="application/pdf"
+            (change)="onFileSelected($event)"
+          />
+        </div>
+
+        <div class="hint">
+          İpucu: Doğrulamak istediğiniz PDF dosyasını seçiniz.
+        </div>
+
+        <label style="margin-top:16px;">Üniversite</label>
+
+        <div class="input-wrap">
+          <select [(ngModel)]="universityName" (change)="onUniversityChange()">
+            <option value="">Üniversite seçiniz</option>
+            <option *ngFor="let university of universities" [value]="university">
+              {{ university }}
+            </option>
+          </select>
+        </div>
+
+        <div class="hint">
+          İpucu: Mezunun kayıtlı olduğu üniversiteyi seçiniz.
+        </div>
+
+        <label style="margin-top:16px;">Bölüm</label>
+
+        <div class="input-wrap">
+          <select [(ngModel)]="department" [disabled]="departmentsLoading || !universityName">
+            <option value="">Bölüm seçiniz</option>
+            <option *ngFor="let dept of departments" [value]="dept">
+              {{ dept }}
+            </option>
+          </select>
+        </div>
+
+        <div class="hint">
+          İpucu: Seçilen üniversiteye ait bölümü seçiniz.
+        </div>
+
+        <label style="margin-top:16px;">Öğrenci Numarası</label>
 
         <div class="input-wrap">
           <input
             type="text"
-            [(ngModel)]="hash"
-            placeholder="A1B2C3..."
+            [(ngModel)]="studentNumber"
+            placeholder="Örn: 220303014"
           />
-
-          <button
-            class="mini-btn"
-            (click)="pasteFromClipboard()"
-            [disabled]="loading"
-          >
-            Yapıştır
-          </button>
         </div>
 
         <div class="hint">
-          İpucu: Hash size verilen değerdir, aynen giriniz.
+          İpucu: Doğrulama işlemi, üniversite, bölüm ve öğrenci numarasına ait kayıt üzerinden yapılır.
         </div>
 
-        <!-- BUTTON -->
         <button
           class="verify-btn"
           (click)="verify()"
-          [disabled]="loading || !hash"
+          [disabled]="loading || !selectedFile || !universityName || !department || !studentNumber"
         >
-          {{ loading ? 'Sorgulanıyor...' : 'Hash Doğrula' }}
+          {{ loading ? 'Doğrulanıyor...' : 'Doğrula' }}
         </button>
 
-        <!-- RESULT -->
-        <div *ngIf="!loading && status" class="result">
-
+        <div *ngIf="status && !loading" class="result">
           <div class="badge valid" *ngIf="status === 'VALID'">
             ✅ Sertifika GEÇERLİ
+            <small>{{ resultMessage }}</small>
           </div>
 
           <div class="badge invalid" *ngIf="status === 'INVALID'">
             ❌ Sertifika GEÇERSİZ
-            <small>Kayıt bulunamadı veya hatalı hash.</small>
+            <small>{{ resultMessage }}</small>
           </div>
-
         </div>
       </div>
     </div>
@@ -120,6 +137,12 @@ import { AuthService } from '../../services/auth.service';
       color:white;
       position:relative;
       overflow:hidden;
+    }
+
+    .bg{
+      position:absolute;
+      inset:0;
+      z-index:0;
     }
 
     .ambient{
@@ -152,8 +175,8 @@ import { AuthService } from '../../services/auth.service';
       right:28px;
       padding:8px 16px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.25);
-      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,0.25);
+      background:rgba(255,255,255,0.12);
       color:white;
       cursor:pointer;
       backdrop-filter:blur(10px);
@@ -162,67 +185,41 @@ import { AuthService } from '../../services/auth.service';
 
     .top-title{
       position:absolute;
-      top:48px;
+      top:96px;
       width:100%;
       text-align:center;
       z-index:2;
     }
 
     .top-title h1{
-      font-size:42px;
-      font-weight:700;
+      font-size:40px;
+      font-weight:600;
+      letter-spacing:0.6px;
+      text-shadow:
+        0 0 30px rgba(120,170,255,0.25),
+        0 2px 6px rgba(0,0,0,0.4);
     }
 
     .glass-card{
       width:520px;
       padding:38px;
-      border-radius:36px;
-      background: linear-gradient(
-        160deg,
-        rgba(255,255,255,0.28),
-        rgba(255,255,255,0.10)
-      );
-      backdrop-filter: blur(36px) saturate(120%);
-      border:1px solid rgba(255,255,255,0.28);
-      box-shadow:
-        inset 0 1px 1px rgba(255,255,255,.35),
-        0 40px 100px rgba(0,0,0,.65);
-      margin-top:40px;
+      border-radius:24px;
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.15);
+      margin-top:60px;
       z-index:2;
-      transition: all .4s ease;
-    }
-
-    /* ✅ GEÇERLİ → YEŞİL */
-    .glass-card.valid-glow{
-      border-color: rgba(34,197,94,.7);
-      box-shadow:
-        0 0 40px rgba(34,197,94,.45),
-        0 0 90px rgba(34,197,94,.35);
-    }
-
-    /* ❌ GEÇERSİZ → KIRMIZI */
-    .glass-card.invalid-glow{
-      border-color: rgba(239,68,68,.7);
-      box-shadow:
-        0 0 40px rgba(239,68,68,.45),
-        0 0 90px rgba(239,68,68,.35);
     }
 
     .card-head{
       display:flex;
       align-items:center;
-      gap:14px;
+      gap:6px;
       margin-bottom:26px;
     }
 
     .icon{
-      width:44px;
-      height:44px;
-      border-radius:16px;
-      background:rgba(255,255,255,.18);
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      font-size:22px;
+      line-height:1;
     }
 
     label{
@@ -234,30 +231,23 @@ import { AuthService } from '../../services/auth.service';
 
     .input-wrap{
       display:flex;
-      align-items:center;
       gap:10px;
       padding:12px;
-      border-radius:18px;
-      background:rgba(255,255,255,.30);
-      border:1px solid rgba(255,255,255,.22);
+      border-radius:14px;
+      background:rgba(255,255,255,0.15);
     }
 
-    input{
+    input, select{
       flex:1;
       border:none;
       background:transparent;
       color:white;
-      font-size:14px;
       outline:none;
+      font-size:14px;
     }
 
-    .mini-btn{
-      padding:8px 14px;
-      border-radius:14px;
-      border:none;
-      background:rgba(255,255,255,.25);
-      color:white;
-      cursor:pointer;
+    select option{
+      color:black;
     }
 
     .hint{
@@ -269,17 +259,18 @@ import { AuthService } from '../../services/auth.service';
     .verify-btn{
       margin-top:20px;
       width:100%;
-      padding:16px;
-      border-radius:18px;
+      padding:14px;
       border:none;
-      background: linear-gradient(
-        90deg,
-        rgba(255,255,255,0.38),
-        rgba(255,255,255,0.22)
-      );
+      border-radius:14px;
+      background:#555;
       color:white;
       font-weight:600;
       cursor:pointer;
+    }
+
+    .verify-btn:disabled{
+      opacity:0.65;
+      cursor:not-allowed;
     }
 
     .result{
@@ -289,26 +280,45 @@ import { AuthService } from '../../services/auth.service';
 
     .badge{
       padding:14px;
-      border-radius:20px;
+      border-radius:16px;
       font-weight:600;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
     }
 
     .badge.valid{
-      background:rgba(34,197,94,.15);
+      background:rgba(34,197,94,0.2);
       color:#22c55e;
     }
 
     .badge.invalid{
-      background:rgba(239,68,68,.15);
+      background:rgba(239,68,68,0.2);
       color:#ef4444;
+    }
+
+    .badge small{
+      font-size:13px;
+      font-weight:500;
+      color:#e5e7eb;
     }
   `]
 })
-export class EmployerDashboardPage {
+export class EmployerDashboardPage implements OnInit {
 
-  hash = '';
+  selectedFile: File | null = null;
+
+  universityName = '';
+  department = '';
+  studentNumber = '';
+
+  universities: string[] = [];
+  departments: string[] = [];
+
   loading = false;
+  departmentsLoading = false;
   status: VerifyStatus | null = null;
+  resultMessage = '';
 
   constructor(
     private api: ApiService,
@@ -317,33 +327,86 @@ export class EmployerDashboardPage {
     private authService: AuthService
   ) {}
 
-  verify(): void {
-    if (!this.hash) return;
+  ngOnInit(): void {
+    this.loadUniversities();
+  }
 
-    this.loading = true;
-    this.status = null;
-
-    this.api.verifyCertificate(this.hash).subscribe({
-      next: (res) => {
-        const backendStatus = res.status as string;
-        this.status = backendStatus === 'GEÇERLİ' ? 'VALID' : 'INVALID';
-        this.loading = false;
+  loadUniversities(): void {
+    this.api.getUniversities().subscribe({
+      next: (res: string[]) => {
+        this.universities = res;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.status = 'INVALID';
-        this.loading = false;
+        this.universities = [];
         this.cdr.detectChanges();
       }
     });
   }
 
-  async pasteFromClipboard(): Promise<void> {
-    try {
-      const text = await navigator.clipboard.readText();
-      this.hash = text.trim();
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedFile = (input.files && input.files.length > 0) ? input.files[0] : null;
+    this.cdr.detectChanges();
+  }
+
+  onUniversityChange(): void {
+    this.department = '';
+    this.departments = [];
+
+    if (!this.universityName) {
       this.cdr.detectChanges();
-    } catch {}
+      return;
+    }
+
+    this.departmentsLoading = true;
+
+    this.api.getDepartmentsByUniversity(this.universityName).subscribe({
+      next: (res: string[]) => {
+        this.departments = res;
+        this.departmentsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.departments = [];
+        this.departmentsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  verify(): void {
+    if (!this.selectedFile || !this.universityName || !this.department || !this.studentNumber) return;
+
+    this.loading = true;
+    this.status = null;
+    this.resultMessage = '';
+
+    this.api.verifyCertificatePdf(
+      this.selectedFile,
+      this.universityName,
+      this.department,
+      this.studentNumber
+    ).subscribe({
+      next: (res: { status: string }) => {
+        this.resultMessage = res.status;
+
+        if (res.status && res.status.toUpperCase().includes('GEÇERLİ')) {
+          this.status = 'VALID';
+        } else {
+          this.status = 'INVALID';
+        }
+
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.status = 'INVALID';
+        this.resultMessage = err?.error?.status || 'Doğrulama sırasında hata oluştu.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   logout(): void {

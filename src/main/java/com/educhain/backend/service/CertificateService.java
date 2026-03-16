@@ -27,13 +27,7 @@ public class CertificateService {
         // 🔐 PDF → SHA-256 HASH (64 hex char)
         String pdfHashHex = PdfHashUtil.hash(pdf);
 
-        // 🔎 DEBUG (çok önemli)
-        System.out.println("=== UPLOAD STEP ===");
-        System.out.println("PDF HASH (RAW) = " + pdfHashHex);
-        System.out.println("PDF HASH LENGTH = " + pdfHashHex.length());
-
         // ❗ GARANTİ: blockchain tarafı 0x'siz 64 hex bekliyor
-        // burada SADECE temiz hex gönderiyoruz
         if (pdfHashHex.startsWith("0x") || pdfHashHex.startsWith("0X")) {
             pdfHashHex = pdfHashHex.substring(2);
         }
@@ -50,8 +44,45 @@ public class CertificateService {
                 studentWallet
         );
 
-        System.out.println("BLOCKCHAIN TX HASH = " + txHash);
-
         return txHash;
+    }
+
+    /**
+     * ✅ İşveren doğrulama akışı:
+     * 1) PDF -> HASH üret
+     * 2) Blockchain verifyCertificate(hash) çağır
+     * 3) Kayıt var mı?
+     * 4) isValid true mu?
+     * 5) Seçilen studentWallet ile eşleşiyor mu?
+     */
+    public boolean verifyAgainstStudentWallet(
+            MultipartFile pdf,
+            String studentWallet
+    ) throws Exception {
+
+        // 1) PDF -> HASH
+        String pdfHashHex = PdfHashUtil.hash(pdf);
+
+        if (pdfHashHex.startsWith("0x") || pdfHashHex.startsWith("0X")) {
+            pdfHashHex = pdfHashHex.substring(2);
+        }
+
+        if (pdfHashHex.length() != 64) {
+            throw new IllegalStateException("PDF hash 64 hex karakter değil! Gelen: " + pdfHashHex.length());
+        }
+
+        // 2) Blockchain'den detaylı doğrula
+        BlockchainService.VerifyResult onChain =
+                blockchainService.verifyCertificateOnChain(pdfHashHex);
+
+        // kayıt var mı?
+        if (!onChain.exists) return false;
+
+        // isValid true mu?
+        if (!onChain.isValid) return false;
+
+        // seçilen öğrenci ile eşleşiyor mu?
+        return onChain.studentAddress != null
+                && onChain.studentAddress.equalsIgnoreCase(studentWallet);
     }
 }
