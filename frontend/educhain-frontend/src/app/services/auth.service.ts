@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UserRole } from '../types/role';
 
@@ -9,6 +9,8 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  // ─── OTURUM ─────────────────────────────────────────────────────────────────
+
   getRole(): UserRole | null {
     return localStorage.getItem('role') as UserRole | null;
   }
@@ -17,9 +19,13 @@ export class AuthService {
     return !!this.getRole();
   }
 
-  loginAs(role: UserRole, wallet?: string) {
+  saveSession(token: string, role: string): void {
+    localStorage.setItem('token', token);
     localStorage.setItem('role', role);
+  }
 
+  loginAs(role: UserRole, wallet?: string): void {
+    localStorage.setItem('role', role);
     if (role === 'GRADUATE') {
       localStorage.setItem('wallet', (wallet ?? '').trim());
     } else {
@@ -31,9 +37,29 @@ export class AuthService {
     return localStorage.getItem('wallet');
   }
 
-  logout() {
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  logout(): void {
     localStorage.removeItem('role');
     localStorage.removeItem('wallet');
+    localStorage.removeItem('token');
+  }
+
+  // ─── AUTH HEADER ─────────────────────────────────────────────────────────────
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+  }
+
+  // ─── AUTH API ÇAĞRILARI ──────────────────────────────────────────────────────
+
+  login(identifier: string, password: string): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/login`, { identifier, password });
   }
 
   registerGraduate(data: {
@@ -46,5 +72,57 @@ export class AuthService {
     password: string;
   }): Observable<any> {
     return this.http.post(`${this.BASE_URL}/auth/register/graduate`, data);
+  }
+
+  registerEmployer(data: {
+    institutionName: string;
+    email: string;
+    password: string;
+  }): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/register/employer`, data);
+  }
+
+  registerUniversity(data: {
+    universityName: string;
+    email: string;
+    password: string;
+  }): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/register/university`, data);
+  }
+
+  // ─── WALLET API ÇAĞRILARI ────────────────────────────────────────────────────
+
+  getWalletChallenge(): Observable<any> {
+    return this.http.get(`${this.BASE_URL}/wallet/challenge`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  verifyWalletSignature(data: {
+    walletAddress: string;
+    message: string;
+    signature: string;
+  }): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/wallet/verify`, data, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  // ─── PROFİL API ÇAĞRILARI ────────────────────────────────────────────────────
+
+  /**
+   * Giriş yapan kullanıcının tüm bilgilerini getirir.
+   * GET /api/auth/me
+   */
+  getMe(): Observable<any> {
+    return this.http.get(`${this.BASE_URL}/user/me`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  updateProfile(data: any): Observable<any> {
+    return this.http.put(`${this.BASE_URL}/user/profile`, data, {
+      headers: this.getAuthHeaders()
+    });
   }
 }

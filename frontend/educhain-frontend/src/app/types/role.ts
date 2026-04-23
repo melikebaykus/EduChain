@@ -1,1 +1,1 @@
-export type UserRole = 'EMPLOYER' | 'GRADUATE';
+export type UserRole = 'EMPLOYER' | 'GRADUATE' | 'UNIVERSITY';

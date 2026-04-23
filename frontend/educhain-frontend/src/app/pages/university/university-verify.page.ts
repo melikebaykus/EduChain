@@ -9,14 +9,15 @@ type VerifyStatus = 'VALID' | 'INVALID';
 
 @Component({
   standalone: true,
-  selector: 'app-employer-dashboard',
+  selector: 'app-university-verify',
   imports: [CommonModule, FormsModule],
   template: `
     <div class="page">
-      <canvas id="bg-canvas-edash"></canvas>
+      <canvas id="bg-canvas-uv"></canvas>
       <div class="grid-overlay"></div>
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
 
       <button class="logout-btn" (click)="logout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -38,11 +39,12 @@ type VerifyStatus = 'VALID' | 'INVALID';
             <p class="card-sub">Sertifika geçerlilik kontrol sistemi</p>
           </div>
 
+          <!-- CÜZDAN -->
           <div class="wallet-box">
             <div class="wallet-head">
               <div>
                 <div class="wallet-kicker">BLOKZİNCİR KİMLİĞİ</div>
-                <div class="wallet-title">İşveren Cüzdanı</div>
+                <div class="wallet-title">Üniversite Cüzdanı</div>
               </div>
 
               <div class="wallet-pill" [class.connected]="walletVerified">
@@ -71,15 +73,16 @@ type VerifyStatus = 'VALID' | 'INVALID';
 
             <p class="wallet-msg" *ngIf="walletMessage">{{ walletMessage }}</p>
             <p class="wallet-note" *ngIf="!walletMessage">
-              İşveren hesabını yetkili cüzdan ile eşleştirmek için bu alan kullanılacak.
+              Üniversite hesabını yetkili cüzdan ile eşleştirmek için bu alan kullanılacak.
             </p>
           </div>
 
+          <!-- PDF -->
           <div class="field">
             <label class="fl">DİPLOMA / SERTİFİKA PDF</label>
             <div class="file-wrap" [class.has-file]="selectedFile">
-              <input type="file" accept="application/pdf" (change)="onFileSelected($event)" id="pdf-input" />
-              <label for="pdf-input" class="file-label">
+              <input type="file" accept="application/pdf" (change)="onFileSelected($event)" id="pdf-input-uv" />
+              <label for="pdf-input-uv" class="file-label">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M4 16l4-4 4 4 4-8 4 8"/>
                   <rect x="2" y="2" width="20" height="20" rx="2"/>
@@ -90,6 +93,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
             <p class="hint">Doğrulamak istediğiniz PDF dosyasını seçiniz.</p>
           </div>
 
+          <!-- ÜNİVERSİTE -->
           <div class="field">
             <label class="fl">ÜNİVERSİTE</label>
             <div class="fw">
@@ -105,6 +109,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
             <p class="hint">Mezunun kayıtlı olduğu üniversiteyi seçiniz.</p>
           </div>
 
+          <!-- BÖLÜM -->
           <div class="field">
             <label class="fl">BÖLÜM</label>
             <div class="fw">
@@ -120,6 +125,7 @@ type VerifyStatus = 'VALID' | 'INVALID';
             <p class="hint">Seçilen üniversiteye ait bölümü seçiniz.</p>
           </div>
 
+          <!-- ÖĞRENCİ NO -->
           <div class="field">
             <label class="fl">ÖĞRENCİ NUMARASI</label>
             <div class="fw">
@@ -131,7 +137,8 @@ type VerifyStatus = 'VALID' | 'INVALID';
           <button
             class="verify-btn"
             [disabled]="loading || !selectedFile || !universityName || !department || !studentNumber"
-            (click)="verify()">
+            (click)="verify()"
+          >
             <svg *ngIf="!loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
@@ -170,72 +177,515 @@ type VerifyStatus = 'VALID' | 'INVALID';
   `,
   styles: [`
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    .page { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 80px 24px 24px; font-family: 'DM Sans','Inter',system-ui,sans-serif; color: #f0e8d8; }
-    #bg-canvas-edash { position: fixed; inset: 0; z-index: 0; }
-    .grid-overlay { position: fixed; inset: 0; z-index: 1; pointer-events: none; background-image: linear-gradient(rgba(109,40,217,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(109,40,217,.03) 1px,transparent 1px); background-size: 60px 60px; }
-    .blob { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 1; pointer-events: none; animation: blobFloat linear infinite; }
-    .blob-1 { width: 500px; height: 500px; background: #1e1050; top: -150px; left: -150px; opacity: .4; animation-duration: 14s; }
-    .blob-2 { width: 450px; height: 450px; background: #130a3a; bottom: -100px; right: -100px; opacity: .35; animation-duration: 17s; animation-delay: -6s; }
-    @keyframes blobFloat { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(25px,-35px) scale(1.06)} 66%{transform:translate(-18px,18px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
-    .logout-btn { position: fixed; top: 20px; right: 24px; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 8px 18px; background: rgba(15,5,40,.7); border: 1px solid rgba(109,40,217,.25); border-radius: 100px; color: rgba(196,181,253,.6); font-size: 12px; font-weight: 500; cursor: pointer; backdrop-filter: blur(14px); transition: all .25s; font-family: 'DM Sans','Inter',sans-serif; }
-    .logout-btn:hover { background: rgba(220,40,40,.15); border-color: #e05252; color: #ff9090; }
-    .logout-btn svg { width: 14px; height: 14px; }
-    .wrapper { position: relative; z-index: 10; width: 100%; display: flex; align-items: center; justify-content: center; }
-    .card { width: 100%; max-width: 520px; background: rgba(12,5,35,0.82); border: 1px solid rgba(109,40,217,.2); border-radius: 26px; padding: 48px 44px 42px; backdrop-filter: blur(24px); box-shadow: 0 0 0 1px rgba(109,40,217,.06),0 40px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04); animation: cardIn .8s .1s cubic-bezier(.16,1,.3,1) both; }
-    @keyframes cardIn { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:none} }
-    .card-header { text-align: center; margin-bottom: 36px; }
-    .emblem { width: 62px; height: 62px; border-radius: 18px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#6d28d9,#3b1a78); box-shadow: 0 8px 28px rgba(109,40,217,.4); }
-    .emblem svg { width: 30px; height: 30px; }
-    .card-title { font-family: 'Cormorant Garamond',Georgia,serif; font-size: 27px; font-weight: 700; background: linear-gradient(135deg,#fff,#c4b5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .card-sub { font-size: 13px; color: rgba(196,181,253,.45); margin-top: 5px; font-weight: 300; letter-spacing: .04em; }
-    .wallet-box { margin-bottom: 22px; padding: 18px; border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(109,40,217,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
-    .wallet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .wallet-kicker { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #c4b5fd; margin-bottom: 4px; }
-    .wallet-title { font-size: 16px; font-weight: 600; color: #f4efe2; }
-    .wallet-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 999px; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.24); color: #f2a2a2; font-size: 11px; font-weight: 600; white-space: nowrap; }
-    .wallet-pill.connected { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.24); color: #7add9b; }
-    .wallet-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgba(255,255,255,.04); }
-    .wallet-address { width: 100%; margin-bottom: 14px; padding: 13px 14px; border-radius: 13px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); font-size: 13px; line-height: 1.5; color: rgba(232,228,216,.88); word-break: break-all; }
-    .wallet-address.empty { color: rgba(232,228,216,.42); }
-    .wallet-btn { width: 100%; padding: 13px 14px; border: 1px solid rgba(109,40,217,.28); border-radius: 13px; background: linear-gradient(135deg, rgba(109,40,217,.14), rgba(59,26,120,.12)); color: #f3e7c1; font-family: 'DM Sans','Inter',sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .04em; cursor: pointer; transition: all .3s; display: flex; align-items: center; justify-content: center; gap: 9px; }
-    .wallet-btn svg { width: 17px; height: 17px; }
-    .wallet-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(109,40,217,.48); box-shadow: 0 10px 26px rgba(0,0,0,.18); }
-    .wallet-btn:disabled { opacity: .55; cursor: not-allowed; }
-    .wallet-msg, .wallet-note { margin-top: 10px; font-size: 12px; line-height: 1.5; }
-    .wallet-msg { color: #c4b5fd; }
-    .wallet-note { color: rgba(196,181,253,.42); }
-    .field { margin-bottom: 20px; }
-    .fl { display: block; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6d28d9; margin-bottom: 7px; }
-    .fw { position: relative; display: flex; align-items: center; }
-    input[type=text], select { width: 100%; padding: 13px 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 13px; color: #f0e8d8; font-family: 'DM Sans','Inter',sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: all .3s; appearance: none; }
-    input:focus, select:focus { border-color: rgba(109,40,217,.5); background: rgba(109,40,217,.06); box-shadow: 0 0 0 3px rgba(109,40,217,.1); }
-    select:disabled { opacity: .4; cursor: not-allowed; }
-    select option { background: #120530; color: #f0e8d8; }
-    .other-input { margin-top: 8px; }
-    input::placeholder { color: rgba(196,181,253,.25); }
-    .hint { margin-top: 7px; font-size: 11.5px; color: rgba(196,181,253,.35); }
-    .file-wrap { position: relative; }
-    .file-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-    .file-label { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(255,255,255,.05); border: 1px dashed rgba(109,40,217,.3); border-radius: 13px; cursor: pointer; transition: all .3s; font-size: 14px; color: rgba(196,181,253,.5); }
-    .file-label svg { width: 20px; height: 20px; flex-shrink: 0; }
-    .file-wrap:hover .file-label, .file-wrap.has-file .file-label { border-color: rgba(109,40,217,.6); background: rgba(109,40,217,.06); color: #c4b5fd; }
-    .verify-btn { width: 100%; padding: 15px; border: none; border-radius: 13px; font-family: 'DM Sans','Inter',sans-serif; font-size: 13.5px; font-weight: 600; letter-spacing: .07em; cursor: pointer; background: linear-gradient(135deg,#3b1a78,#5b21b6,#6d28d9); background-size: 200%; color: #fff; transition: all .4s; box-shadow: 0 8px 24px rgba(59,26,120,.4); display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
-    .verify-btn svg { width: 18px; height: 18px; }
-    .verify-btn:hover:not(:disabled) { background-position: 100%; box-shadow: 0 12px 32px rgba(59,26,120,.6); transform: translateY(-1px); }
-    .verify-btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
-    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .result { margin-top: 22px; animation: fadeUp .4s both; }
-    .badge { padding: 16px 18px; border-radius: 14px; display: flex; align-items: flex-start; gap: 14px; }
-    .badge svg { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
-    .badge.valid { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); color: #52c97a; }
-    .badge.invalid { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3); color: #e05252; }
-    .badge-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .badge-msg { font-size: 13px; color: rgba(240,240,240,.7); font-weight: 400; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 80px 24px 24px;
+      font-family: 'DM Sans','Inter',system-ui,sans-serif;
+      color: #e8e4d8;
+    }
+
+    #bg-canvas-uv { position: fixed; inset: 0; z-index: 0; }
+
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(201,168,76,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,.035) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      z-index: 1;
+      pointer-events: none;
+      animation: blobFloat linear infinite;
+    }
+
+    .blob-1 {
+      width: 500px;
+      height: 500px;
+      background: #1a3a6e;
+      top: -150px;
+      left: -150px;
+      opacity: .3;
+      animation-duration: 14s;
+    }
+
+    .blob-2 {
+      width: 450px;
+      height: 450px;
+      background: #0a2a5e;
+      bottom: -100px;
+      right: -100px;
+      opacity: .28;
+      animation-duration: 17s;
+      animation-delay: -6s;
+    }
+
+    .blob-3 {
+      width: 280px;
+      height: 280px;
+      background: rgba(201,168,76,.12);
+      top: 50%;
+      left: 50%;
+      opacity: .35;
+      animation-duration: 11s;
+      animation-delay: -3s;
+    }
+
+    @keyframes blobFloat {
+      0% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(25px,-35px) scale(1.06); }
+      66% { transform: translate(-18px,18px) scale(.95); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      background: rgba(10,20,40,.7);
+      border: 1px solid rgba(201,168,76,.22);
+      border-radius: 100px;
+      color: rgba(232,228,216,.5);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      transition: all .25s;
+      font-family: 'DM Sans','Inter',sans-serif;
+    }
+
+    .logout-btn:hover {
+      background: rgba(220,40,40,.15);
+      border-color: #e05252;
+      color: #ff9090;
+    }
+
+    .logout-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(10,20,40,0.82);
+      border: 1px solid rgba(201,168,76,.22);
+      border-radius: 26px;
+      padding: 48px 44px 42px;
+      backdrop-filter: blur(24px);
+      box-shadow:
+        0 0 0 1px rgba(201,168,76,.07),
+        0 40px 80px rgba(0,0,0,.65),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      animation: cardIn .8s .1s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px) scale(.97); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .emblem {
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #c9a84c 0%, #7a5a1a 100%);
+      box-shadow: 0 8px 28px rgba(201,168,76,.35);
+    }
+
+    .emblem svg {
+      width: 30px;
+      height: 30px;
+    }
+
+    .card-title {
+      font-family: 'Cormorant Garamond',Georgia,serif;
+      font-size: 27px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, #e8c97a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: rgba(232,228,216,.45);
+      margin-top: 5px;
+      font-weight: 300;
+      letter-spacing: .04em;
+    }
+
+    .wallet-box {
+      margin-bottom: 22px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(201,168,76,.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .wallet-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .wallet-kicker {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      color: #c9a84c;
+      margin-bottom: 4px;
+    }
+
+    .wallet-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f4efe2;
+    }
+
+    .wallet-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.24);
+      color: #f2a2a2;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .wallet-pill.connected {
+      background: rgba(34,197,94,.12);
+      border-color: rgba(34,197,94,.24);
+      color: #7add9b;
+    }
+
+    .wallet-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.04);
+    }
+
+    .wallet-address {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border-radius: 13px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(232,228,216,.88);
+      word-break: break-all;
+    }
+
+    .wallet-address.empty {
+      color: rgba(232,228,216,.42);
+    }
+
+    .wallet-btn {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid rgba(201,168,76,.28);
+      border-radius: 13px;
+      background: linear-gradient(135deg, rgba(201,168,76,.14), rgba(58,95,214,.12));
+      color: #f3e7c1;
+      font-family: 'DM Sans','Inter',sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      cursor: pointer;
+      transition: all .3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+    }
+
+    .wallet-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .wallet-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(201,168,76,.48);
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+    }
+
+    .wallet-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .wallet-msg,
+    .wallet-note {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .wallet-msg {
+      color: #e8c97a;
+    }
+
+    .wallet-note {
+      color: rgba(232,228,216,.42);
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .fl {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: #c9a84c;
+      margin-bottom: 7px;
+    }
+
+    .fw {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type=text], select {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 13px;
+      color: #e8e4d8;
+      font-family: 'DM Sans','Inter',sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: all .3s;
+      appearance: none;
+    }
+
+    input:focus, select:focus {
+      border-color: rgba(201,168,76,.5);
+      background: rgba(201,168,76,.06);
+      box-shadow: 0 0 0 3px rgba(201,168,76,.1);
+    }
+
+    select:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    select option {
+      background: #0d1829;
+      color: #e8e4d8;
+    }
+
+    input::placeholder {
+      color: rgba(232,228,216,.25);
+    }
+
+    .other-input {
+      margin-top: 8px;
+    }
+
+    .hint {
+      margin-top: 7px;
+      font-size: 11.5px;
+      color: rgba(232,228,216,.35);
+    }
+
+    .file-wrap {
+      position: relative;
+    }
+
+    .file-wrap input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .file-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px dashed rgba(201,168,76,.3);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: all .3s;
+      font-size: 14px;
+      color: rgba(232,228,216,.5);
+    }
+
+    .file-label svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .file-wrap:hover .file-label,
+    .file-wrap.has-file .file-label {
+      border-color: rgba(201,168,76,.6);
+      background: rgba(201,168,76,.06);
+      color: #e8c97a;
+    }
+
+    .verify-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 13px;
+      font-family: 'DM Sans','Inter',sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      cursor: pointer;
+      background: linear-gradient(135deg, #1a3a8a 0%, #3a5fd6 55%, #c9a84c 100%);
+      background-size: 200%;
+      color: #fff;
+      transition: all .4s;
+      box-shadow: 0 8px 24px rgba(26,58,138,.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .verify-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .verify-btn:hover:not(:disabled) {
+      background-position: 100%;
+      box-shadow: 0 12px 32px rgba(26,58,138,.6);
+      transform: translateY(-1px);
+    }
+
+    .verify-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .result {
+      margin-top: 22px;
+      animation: fadeUp .4s both;
+    }
+
+    .badge {
+      padding: 16px 18px;
+      border-radius: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .badge svg {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .badge.valid {
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.3);
+      color: #52c97a;
+    }
+
+    .badge.invalid {
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.3);
+      color: #e05252;
+    }
+
+    .badge-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .badge-msg {
+      font-size: 13px;
+      color: rgba(240,240,240,.7);
+      font-weight: 400;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
   `]
 })
-export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
+export class UniversityVerifyPage implements OnInit, AfterViewInit, OnDestroy {
+
   selectedFile: File | null = null;
   universityName = '';
   universityNameOther = '';
@@ -296,15 +746,68 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private pts: any[] = [];
   private animId?: number;
   private resizeHandler?: () => void;
+  private splashEl: HTMLElement | null = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private authService: AuthService,
+    private auth: AuthService,
     private apiService: ApiService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.splashEl = document.createElement('div');
+    this.splashEl.innerHTML = `
+      <div style="width:72px;height:72px;border-radius:22px;margin-bottom:22px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#c9a84c,#7a5a1a);box-shadow:0 0 40px rgba(201,168,76,.4)">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;background:linear-gradient(135deg,#fff,#e8c97a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+        Diploma Doğrulama
+      </div>
+      <div style="font-size:13px;color:rgba(232,228,216,.5);letter-spacing:.1em;margin-top:6px">
+        Sertifika geçerlilik kontrol sistemi
+      </div>
+      <div style="display:flex;gap:8px;margin-top:28px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#c9a84c;animation:spd 1.3s ease-in-out infinite"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#e8c97a;animation:spd 1.3s ease-in-out .2s infinite"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#a8c8e8;animation:spd 1.3s ease-in-out .4s infinite"></span>
+      </div>
+      <style>
+        @keyframes spd {
+          0%,100% { opacity:.35; transform:scale(1); }
+          50% { opacity:1; transform:scale(1.45); }
+        }
+      </style>
+    `;
+
+    Object.assign(this.splashEl.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '99999',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'radial-gradient(ellipse at 50% 50%, #0d1829 0%, #020608 100%)',
+      transition: 'opacity 0.9s ease',
+      opacity: '1'
+    });
+
+    document.body.appendChild(this.splashEl);
+
+    setTimeout(() => {
+      if (this.splashEl) this.splashEl.style.opacity = '0';
+    }, 2200);
+
+    setTimeout(() => {
+      if (this.splashEl) {
+        this.splashEl.remove();
+        this.splashEl = null;
+      }
+    }, 3100);
+  }
 
   ngAfterViewInit(): void {
     setTimeout(() => this.initCanvas(), 50);
@@ -313,14 +816,17 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.animId) cancelAnimationFrame(this.animId);
     if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
+    if (this.splashEl) {
+      this.splashEl.remove();
+      this.splashEl = null;
+    }
   }
 
   private initCanvas(): void {
-    this.canvas = document.getElementById('bg-canvas-edash') as HTMLCanvasElement;
+    this.canvas = document.getElementById('bg-canvas-uv') as HTMLCanvasElement;
     if (!this.canvas) return;
 
     this.ctx = this.canvas.getContext('2d')!;
-
     this.resizeHandler = () => {
       this.canvas!.width = window.innerWidth;
       this.canvas!.height = window.innerHeight;
@@ -329,14 +835,14 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.resizeHandler();
     window.addEventListener('resize', this.resizeHandler);
 
-    this.pts = Array.from({ length: 100 }, () => ({
+    this.pts = Array.from({ length: 130 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       vx: (Math.random() - 0.5) * 0.3,
       vy: (Math.random() - 0.5) * 0.3,
       r: Math.random() * 1.4 + 0.3,
-      a: Math.random() * 0.4 + 0.08,
-      warm: Math.random() > 0.7
+      a: Math.random() * 0.45 + 0.1,
+      gold: Math.random() > 0.8
     }));
 
     const loop = () => {
@@ -347,7 +853,7 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       c.clearRect(0, 0, W, H);
 
       const g = c.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
-      g.addColorStop(0, '#0e0530');
+      g.addColorStop(0, '#0d1829');
       g.addColorStop(1, '#020608');
       c.fillStyle = g;
       c.fillRect(0, 0, W, H);
@@ -359,7 +865,7 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
           const d = Math.sqrt(dx * dx + dy * dy);
 
           if (d < 110) {
-            c.strokeStyle = `rgba(109,40,217,${0.05 * (1 - d / 110)})`;
+            c.strokeStyle = `rgba(201,168,76,${0.055 * (1 - d / 110)})`;
             c.lineWidth = 0.5;
             c.beginPath();
             c.moveTo(this.pts[i].x, this.pts[i].y);
@@ -378,9 +884,9 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
         c.beginPath();
         c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        c.fillStyle = p.warm
-          ? `rgba(109,40,217,${p.a})`
-          : `rgba(196,181,253,${p.a * 0.4})`;
+        c.fillStyle = p.gold
+          ? `rgba(201,168,76,${p.a})`
+          : `rgba(180,200,255,${p.a * 0.5})`;
         c.fill();
       });
 
@@ -400,7 +906,7 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.department = '';
     this.departmentOther = '';
     this.universityNameOther = '';
-    this.filteredDepartments = this.faculties.flatMap((f) => f.departments);
+    this.filteredDepartments = this.faculties.flatMap(f => f.departments);
     this.cdr.detectChanges();
   }
 
@@ -413,8 +919,6 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
       return;
     }
-
-    if (this.walletBusy) return;
 
     this.walletBusy = true;
     this.walletMessage = '';
@@ -431,13 +935,14 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const address = accounts[0];
-      const EMPLOYER_WALLET = '0xb1c0B8DAe6fcC7E32616ae61C77AF7a4ee1cB7cd';
 
-      if (address.toLowerCase() !== EMPLOYER_WALLET.toLowerCase()) {
-        throw new Error('İşveren portalı için MetaMask’ta işveren hesabı seçili olmalı.');
+      const UNIVERSITY_WALLET = '0x5DBB002c51869A32d69Df249B692Cde533131056';
+
+      if (address.toLowerCase() !== UNIVERSITY_WALLET.toLowerCase()) {
+        throw new Error('Üniversite portalı için MetaMask’ta üniversite hesabı seçili olmalı.');
       }
 
-      const challengeRes: any = await this.authService.getWalletChallenge().toPromise();
+      const challengeRes: any = await this.auth.getWalletChallenge().toPromise();
 
       if (!challengeRes?.message) {
         throw new Error('Challenge mesajı alınamadı.');
@@ -448,7 +953,7 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
         params: [challengeRes.message, address]
       });
 
-      const verifyRes: any = await this.authService.verifyWalletSignature({
+      const verifyRes: any = await this.auth.verifyWalletSignature({
         walletAddress: address,
         message: challengeRes.message,
         signature
@@ -461,7 +966,6 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       this.walletVerified = false;
       this.walletMessage =
         error?.message ||
-        error?.error?.message ||
         'MetaMask bağlantısı sırasında bir hata oluştu.';
     } finally {
       this.walletBusy = false;
@@ -534,7 +1038,7 @@ export class EmployerDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   logout(): void {
-    this.authService.logout();
+    this.auth.logout();
     this.router.navigate(['/login']);
   }
 }

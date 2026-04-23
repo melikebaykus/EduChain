@@ -3,10 +3,10 @@ package com.educhain.backend.service;
 import com.educhain.backend.dto.IssueCertificateResponse;
 import com.educhain.backend.model.Student;
 import com.educhain.backend.repository.StudentRepository;
+import com.educhain.backend.util.PdfHashUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.MessageDigest;
 import java.util.Optional;
 
 @Service
@@ -44,16 +44,22 @@ public class UniversityIssueService {
 
             Student student = optionalStudent.get();
 
-            String hash = generateSha256Hex(file.getBytes());
+            // ✅ util.PdfHashUtil kullan — 0x EKLEMİYOR, tutarlı
+            String hash = PdfHashUtil.hash(file);
 
-            String txHash = blockchainService.issueCertificateOnChain(hash, student.getWalletAddress());
+            // ✅ Garantili: 0x yoksa sorun çıkmaz, varsa temizle
+            String cleanHash = hash.startsWith("0x") || hash.startsWith("0X")
+                    ? hash.substring(2)
+                    : hash;
+
+            String txHash = blockchainService.issueCertificateOnChain(cleanHash, student.getWalletAddress());
 
             return new IssueCertificateResponse(
                     "BAŞARILI – diploma blockchain'e yazıldı",
                     student.getStudentName(),
                     student.getStudentNumber(),
                     student.getWalletAddress(),
-                    hash,
+                    cleanHash,
                     txHash
             );
 
@@ -62,17 +68,5 @@ public class UniversityIssueService {
                     "HATA – " + e.getMessage(), null, studentNumber, null, null, null
             );
         }
-    }
-
-    private String generateSha256Hex(byte[] fileBytes) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(fileBytes);
-
-        StringBuilder hex = new StringBuilder("0x");
-        for (byte b : hashBytes) {
-            hex.append(String.format("%02x", b));
-        }
-
-        return hex.toString();
     }
 }

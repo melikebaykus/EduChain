@@ -5,6 +5,7 @@ import com.educhain.backend.dto.LoginRequest;
 import com.educhain.backend.dto.LoginResponse;
 import com.educhain.backend.dto.RegisterEmployerRequest;
 import com.educhain.backend.dto.RegisterGraduateRequest;
+import com.educhain.backend.dto.RegisterUniversityRequest;
 import com.educhain.backend.model.User;
 import com.educhain.backend.repository.UserRepository;
 import com.educhain.backend.service.JwtService;
@@ -31,6 +32,7 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
+    // ─── MEZUN KAYIT ────────────────────────────────────────────────────────────
     @PostMapping("/register/graduate")
     public ResponseEntity<AuthResponse> registerGraduate(@RequestBody RegisterGraduateRequest request) {
 
@@ -70,6 +72,7 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse("SUCCESS", "Mezun kaydı başarıyla oluşturuldu."));
     }
 
+    // ─── İŞVEREN KAYIT ──────────────────────────────────────────────────────────
     @PostMapping("/register/employer")
     public ResponseEntity<AuthResponse> registerEmployer(@RequestBody RegisterEmployerRequest request) {
 
@@ -87,7 +90,6 @@ public class AuthController {
 
         User user = new User();
         user.setFullName(request.getInstitutionName().trim());
-        user.setUsername(null);
         user.setEmail(request.getEmail().trim());
         user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
         user.setRole(User.Role.EMPLOYER);
@@ -98,6 +100,35 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse("SUCCESS", "İşveren kaydı başarıyla oluşturuldu."));
     }
 
+    // ─── ÜNİVERSİTE KAYIT (YENİ) ────────────────────────────────────────────────
+    @PostMapping("/register/university")
+    public ResponseEntity<AuthResponse> registerUniversity(@RequestBody RegisterUniversityRequest request) {
+
+        if (request.getUniversityName() == null || request.getUniversityName().isBlank() ||
+                request.getEmail() == null || request.getEmail().isBlank() ||
+                request.getPassword() == null || request.getPassword().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(new AuthResponse("ERROR", "Lütfen tüm üniversite kayıt alanlarını doldurun."));
+        }
+
+        if (userRepository.existsByEmail(request.getEmail().trim())) {
+            return ResponseEntity.badRequest()
+                    .body(new AuthResponse("ERROR", "Bu e-posta ile kayıtlı bir kullanıcı zaten var."));
+        }
+
+        User user = new User();
+        user.setFullName(request.getUniversityName().trim());
+        user.setEmail(request.getEmail().trim());
+        user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        user.setRole(User.Role.UNIVERSITY);
+        user.setUniversityName(request.getUniversityName().trim());
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new AuthResponse("SUCCESS", "Üniversite kaydı başarıyla oluşturuldu."));
+    }
+
+    // ─── GİRİŞ ──────────────────────────────────────────────────────────────────
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
