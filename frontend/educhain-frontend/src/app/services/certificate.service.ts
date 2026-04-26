@@ -8,7 +8,7 @@ import { Observable, map } from 'rxjs';
 export class CertificateService {
 
   // 🔗 Backendciden gelen ngrok URL
-  private baseUrl = 'https://predisastrously-relevant-barb.ngrok-free.dev';
+  private baseUrl = 'http://localhost:8080';
 
   constructor(private http: HttpClient) {}
 

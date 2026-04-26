@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CertificateService } from '../../services/certificate.service';
 
 type EditSection = 'profile'|'summary'|'education'|'experience'|'projects'|'skills'|'languages'|'hobbies'|'certificates';
 
@@ -179,6 +180,7 @@ interface LanguageItem { name:string; level:string; percent:number; }
             <div class="toast toast-success">✓ Profil başarıyla kaydedildi!</div>
           </div>
 
+          <!-- ✅ DIPLOMA BANNER — blockchain sonucuna göre 3 farklı durum -->
           <div class="diploma-banner">
             <div class="db-left">
               <div class="db-icon">
@@ -189,9 +191,23 @@ interface LanguageItem { name:string; level:string; percent:number; }
                 <div class="db-uni">{{ university || 'Atatürk Üniversitesi' }} · {{ graduationInfo || '2026' }}</div>
               </div>
             </div>
-            <div class="db-badge">
+
+            <!-- Doğrulandı -->
+            <div class="db-badge verified" *ngIf="blockchainVerified === true">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               Blokzincirde Doğrulandı
+            </div>
+
+            <!-- Sorgulanıyor -->
+            <div class="db-badge checking" *ngIf="blockchainVerified === null && diplomaHash">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Sorgulanıyor...
+            </div>
+
+            <!-- Doğrulanmamış -->
+            <div class="db-badge unverified" *ngIf="blockchainVerified === false">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Henüz Doğrulanmamış
             </div>
           </div>
 
@@ -614,8 +630,11 @@ interface LanguageItem { name:string; level:string; percent:number; }
     .db-icon svg { width: 24px; height: 24px; }
     .db-title { font-size: 15px; font-weight: 700; color: #e8f0fe; }
     .db-uni { font-size: 13px; color: rgba(232,240,254,.5); margin-top: 3px; }
-    .db-badge { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(58,154,88,.15); border: 1px solid rgba(58,154,88,.3); border-radius: 100px; font-size: 12px; font-weight: 700; color: #52c97a; white-space: nowrap; }
+    .db-badge { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 100px; font-size: 12px; font-weight: 700; white-space: nowrap; }
     .db-badge svg { width: 14px; height: 14px; }
+    .db-badge.verified { background: rgba(58,154,88,.15); border: 1px solid rgba(58,154,88,.3); color: #52c97a; }
+    .db-badge.checking { background: rgba(255,200,50,.08); border: 1px solid rgba(255,200,50,.25); color: #f0c040; }
+    .db-badge.unverified { background: rgba(220,40,40,.08); border: 1px solid rgba(220,40,40,.25); color: #ff9090; }
     .panel { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 20px; padding: 24px; transition: border-color .2s; }
     .panel:hover { border-color: rgba(58,154,88,.15); }
     .ph { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
@@ -724,6 +743,10 @@ export class GraduateDashboardPage implements OnInit {
   twitter = ''; portfolio = ''; address = ''; graduationInfo = '';
   wallet = ''; copied = false; profileViews = 142; summary = '';
 
+  // ✅ YENİ: Blockchain doğrulama state'leri
+  diplomaHash = '';
+  blockchainVerified: boolean | null = null; // null=sorgulanıyor, true=doğrulandı, false=doğrulanmamış
+
   skillList: string[] = []; skillInput = ''; skillSugg: string[] = [];
   languageList: LanguageItem[] = [];
   langInput = ''; langLevel = 'Başlangıç'; langSugg: string[] = [];
@@ -768,7 +791,13 @@ export class GraduateDashboardPage implements OnInit {
     return '🎉 Profiliniz neredeyse tamamlandı!';
   }
 
-  constructor(private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {}
+  // ✅ YENİ: CertificateService inject edildi
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private certService: CertificateService
+  ) {}
 
   ngOnInit(): void {
     this.wallet = this.auth.getWallet?.() ?? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
@@ -794,7 +823,6 @@ export class GraduateDashboardPage implements OnInit {
         this.address        = data.address        ?? '';
         this.graduationInfo = data.graduationInfo ?? '';
         this.summary        = data.summary        ?? '';
-        // ✅ Fotoğraf backend'den yükleniyor
         this.photoPreview   = data.photoBase64 && data.photoBase64.length > 0 ? data.photoBase64 : null;
 
         if (data.skills)       { try { this.skillList      = data.skills.split(',').map((s:string) => s.trim()).filter(Boolean); } catch {} }
@@ -803,6 +831,24 @@ export class GraduateDashboardPage implements OnInit {
         if (data.experience)   { try { this.experienceList = JSON.parse(data.experience); } catch {} }
         if (data.projects)     { try { this.projectsList   = JSON.parse(data.projects); } catch {} }
         if (data.certificates) { try { this.certList       = JSON.parse(data.certificates); } catch {} }
+
+        // ✅ YENİ: diplomaHash varsa blockchain'i sorgula
+        this.diplomaHash = data.diplomaHash ?? '';
+        if (this.diplomaHash) {
+          this.blockchainVerified = null; // sorgulanıyor
+          this.certService.verifyCertificate(this.diplomaHash).subscribe({
+            next: (isValid: boolean) => {
+              this.blockchainVerified = isValid;
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              this.blockchainVerified = false;
+              this.cdr.detectChanges();
+            }
+          });
+        } else {
+          this.blockchainVerified = false;
+        }
 
         this.pageLoading = false;
         this.cdr.detectChanges();
@@ -851,11 +897,9 @@ export class GraduateDashboardPage implements OnInit {
       experience:     JSON.stringify(this.experienceList),
       projects:       JSON.stringify(this.projectsList),
       certificates:   JSON.stringify(this.certList),
-      // ✅ Fotoğraf backend'e kaydediliyor
       photoBase64:    this.photoPreview ?? ''
     };
 
-    // 8 saniye timeout
     const timeout = setTimeout(() => {
       if (this.saving) this.showSaveMessage(true);
     }, 8000);
@@ -879,7 +923,6 @@ export class GraduateDashboardPage implements OnInit {
   onPhotoSelected(e: Event): void {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
-    // ✅ Fotoğrafı küçült (max 400px, kalite 0.7) — büyük base64 backend'e sığmaz
     const img = new Image();
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -901,7 +944,6 @@ export class GraduateDashboardPage implements OnInit {
     reader.readAsDataURL(f);
   }
 
-  // openEdit / applyEdit / cancelEdit
   openEdit(s: EditSection): void {
     switch(s) {
       case 'profile': this.backup.profile = {fullName:this.fullName,title:this.title,email:this.email,phone:this.phone,linkedin:this.linkedin,github:this.github,twitter:this.twitter,portfolio:this.portfolio,city:this.city}; break;

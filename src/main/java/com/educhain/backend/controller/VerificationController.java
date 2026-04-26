@@ -26,8 +26,9 @@ public class VerificationController {
     @PostMapping("/verify")
     public ResponseEntity<VerifyResponse> verify(@RequestBody VerifyRequest request) {
         String result = verificationService.verifyHash(request.getHash());
-        VerifyResponse response = new VerifyResponse(result);
-        return ResponseEntity.ok(response);
+        // ✅ YENİ: Frontend { valid: boolean } bekliyor
+        boolean isValid = "GEÇERLİ".equals(result);
+        return ResponseEntity.ok(new VerifyResponse(isValid, result));
     }
 
     @PostMapping(
@@ -47,7 +48,7 @@ public class VerificationController {
                 studentNumber
         );
 
-        VerifyResponse response = new VerifyResponse(result);
-        return ResponseEntity.ok(response);
+        boolean isValid = "GEÇERLİ".equals(result);
+        return ResponseEntity.ok(new VerifyResponse(isValid, result));
     }
 }

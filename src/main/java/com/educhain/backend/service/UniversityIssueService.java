@@ -2,7 +2,9 @@ package com.educhain.backend.service;
 
 import com.educhain.backend.dto.IssueCertificateResponse;
 import com.educhain.backend.model.Student;
+import com.educhain.backend.model.User;
 import com.educhain.backend.repository.StudentRepository;
+import com.educhain.backend.repository.UserRepository;
 import com.educhain.backend.util.PdfHashUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,10 +16,14 @@ public class UniversityIssueService {
 
     private final StudentRepository studentRepository;
     private final BlockchainService blockchainService;
+    private final UserRepository userRepository;
 
-    public UniversityIssueService(StudentRepository studentRepository, BlockchainService blockchainService) {
+    public UniversityIssueService(StudentRepository studentRepository,
+                                  BlockchainService blockchainService,
+                                  UserRepository userRepository) {
         this.studentRepository = studentRepository;
         this.blockchainService = blockchainService;
+        this.userRepository = userRepository;
     }
 
     public IssueCertificateResponse issueCertificate(MultipartFile file, String studentNumber) {
@@ -53,6 +59,14 @@ public class UniversityIssueService {
                     : hash;
 
             String txHash = blockchainService.issueCertificateOnChain(cleanHash, student.getWalletAddress());
+
+            // ✅ YENİ: Hash'i User tablosuna kaydet
+            Optional<User> userOpt = userRepository.findByStudentNumber(student.getStudentNumber());
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setDiplomaHash(cleanHash);
+                userRepository.save(user);
+            }
 
             return new IssueCertificateResponse(
                     "BAŞARILI – diploma blockchain'e yazıldı",

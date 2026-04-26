@@ -148,6 +148,8 @@ public class UserController {
         map.put("projects", user.getProjects());
         map.put("certificates", user.getCertificates());
         map.put("photoBase64", user.getPhotoBase64());
+        // ✅ YENİ: diplomaHash frontend'e gönderiliyor
+        map.put("diplomaHash", user.getDiplomaHash());
         return map;
     }
 }

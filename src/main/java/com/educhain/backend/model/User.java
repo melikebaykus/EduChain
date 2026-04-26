@@ -74,6 +74,9 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String photoBase64;
 
+    // ✅ YENİ: Diploma blockchain hash'i
+    private String diplomaHash;
+
     public User() {
     }
 
@@ -83,7 +86,7 @@ public class User {
                 String faculty, String phone, String linkedIn, String github, String twitter,
                 String portfolio, String address, String graduationInfo, String summary,
                 String skills, String languages, String hobbies, String experience,
-                String projects, String certificates, String photoBase64) {
+                String projects, String certificates, String photoBase64, String diplomaHash) {
         this.id = id;
         this.fullName = fullName;
         this.username = username;
@@ -113,6 +116,7 @@ public class User {
         this.projects = projects;
         this.certificates = certificates;
         this.photoBase64 = photoBase64;
+        this.diplomaHash = diplomaHash;
     }
 
     public Long getId() {
@@ -345,5 +349,14 @@ public class User {
 
     public void setPhotoBase64(String photoBase64) {
         this.photoBase64 = photoBase64;
+    }
+
+    // ✅ YENİ getter/setter
+    public String getDiplomaHash() {
+        return diplomaHash;
+    }
+
+    public void setDiplomaHash(String diplomaHash) {
+        this.diplomaHash = diplomaHash;
     }
 }
