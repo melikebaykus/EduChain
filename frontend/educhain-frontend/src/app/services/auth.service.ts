@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { UserRole } from '../types/role';
 
 @Injectable({ providedIn: 'root' })
@@ -62,6 +63,7 @@ export class AuthService {
     return this.http.post(`${this.BASE_URL}/auth/login`, { identifier, password });
   }
 
+  // ✅ YENİ: FormData ile mezun kaydı (diploma PDF desteği)
   registerGraduate(data: {
     fullName: string;
     username: string;
@@ -70,8 +72,26 @@ export class AuthService {
     department: string;
     studentNumber: string;
     password: string;
+    diplomaFile?: File | null;
   }): Observable<any> {
-    return this.http.post(`${this.BASE_URL}/auth/register/graduate`, data);
+    const formData = new FormData();
+    formData.append('fullName', data.fullName);
+    formData.append('username', data.username);
+    formData.append('email', data.email);
+    formData.append('universityName', data.universityName);
+    formData.append('department', data.department);
+    formData.append('studentNumber', data.studentNumber);
+    formData.append('password', data.password);
+
+    // ✅ Diploma PDF varsa ekle
+    if (data.diplomaFile) {
+      formData.append('diplomaFile', data.diplomaFile);
+    }
+
+    // ✅ 120 saniye timeout — blockchain sorgusu uzun sürebilir
+    return this.http.post(`${this.BASE_URL}/auth/register/graduate`, formData).pipe(
+      timeout(120000)
+    );
   }
 
   registerEmployer(data: {
@@ -110,10 +130,6 @@ export class AuthService {
 
   // ─── PROFİL API ÇAĞRILARI ────────────────────────────────────────────────────
 
-  /**
-   * Giriş yapan kullanıcının tüm bilgilerini getirir.
-   * GET /api/auth/me
-   */
   getMe(): Observable<any> {
     return this.http.get(`${this.BASE_URL}/user/me`, {
       headers: this.getAuthHeaders()
